@@ -1,0 +1,284 @@
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300..800&family=Source+Serif+4:opsz,wght@8..60,400;8..60,600&display=swap');
+@import "tailwindcss";
+
+/* Theme is driven by a class on <html>, set before paint by the bootstrap
+   script in index.html, so the page never flashes the wrong palette. */
+@custom-variant dark (&:where(.dark, .dark *));
+
+/* ---------------------------------------------------------------
+   Deep Navy + Teal. Every colour is a role, defined once per mode,
+   so a component never hard-codes a light- or dark-only value.
+   --------------------------------------------------------------- */
+:root {
+  --qb-canvas:      #F6F5F0;
+  --qb-surface:     #FFFFFF;
+  --qb-raised:      #EFEDE6;
+  --qb-ink:         #1F2937;
+  --qb-muted:       #5F6E85;
+  --qb-line:        #E1DFD7;
+  --qb-navy:        #142D4E;
+  --qb-navy-soft:   #E8EDF4;
+  --qb-on-navy:     #F6F5F0;
+  --qb-teal:        #20A89A;
+  --qb-teal-ink:    #0A7367;
+  --qb-teal-solid:  #0E7A6E;
+  --qb-on-teal:     #FFFFFF;
+  --qb-teal-soft:   #E3F4F1;
+  --qb-shadow:      14 45 78;
+
+  /* Chart series - validated for CVD and contrast on the light surface. */
+  --qb-series-1:    #00A694;
+  --qb-series-2:    #E0601F;
+  --qb-series-3:    #2A78D6;
+
+  color-scheme: light;
+}
+
+.dark {
+  --qb-canvas:      #0B1826;
+  --qb-surface:     #14273C;
+  --qb-raised:      #1C3148;
+  --qb-ink:         #E7EEF6;
+  --qb-muted:       #94A8BE;
+  --qb-line:        #27405C;
+  --qb-navy:        #1A3252;
+  --qb-navy-soft:   #1C3148;
+  --qb-on-navy:     #E7EEF6;
+  --qb-teal:        #2BBBA9;
+  --qb-teal-ink:    #4FD3C1;
+  --qb-teal-solid:  #2BBBA9;
+  --qb-on-teal:     #06231F;
+  --qb-teal-soft:   #0E3A37;
+  --qb-shadow:      0 0 0;
+
+  /* The same three hues, re-stepped for the dark surface. */
+  --qb-series-1:    #00A694;
+  --qb-series-2:    #E0601F;
+  --qb-series-3:    #4488E0;
+
+  color-scheme: dark;
+}
+
+@theme inline {
+  --color-canvas:     var(--qb-canvas);
+  --color-surface:    var(--qb-surface);
+  --color-raised:     var(--qb-raised);
+  --color-ink:        var(--qb-ink);
+  --color-muted:      var(--qb-muted);
+  --color-line:       var(--qb-line);
+  --color-navy:       var(--qb-navy);
+  --color-navysoft:   var(--qb-navy-soft);
+  --color-onnavy:     var(--qb-on-navy);
+  --color-teal:       var(--qb-teal);
+  --color-tealink:    var(--qb-teal-ink);
+  --color-tealsolid:  var(--qb-teal-solid);
+  --color-onteal:     var(--qb-on-teal);
+  --color-tealsoft:   var(--qb-teal-soft);
+
+  /* Kept so any stray `primary` utility still resolves to the new accent. */
+  --color-primary:    var(--qb-teal-solid);
+
+  --font-sans:   "Outfit", ui-sans-serif, system-ui, sans-serif;
+  --font-serif:  "Source Serif 4", ui-serif, Georgia, serif;
+}
+
+@layer base {
+  html {
+    scroll-behavior: smooth;
+  }
+
+  body {
+    background-color: var(--qb-canvas);
+    color: var(--qb-ink);
+    font-family: var(--font-sans);
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* One visible focus style everywhere, so keyboard users are never lost. */
+  :focus-visible {
+    outline: 2px solid var(--qb-teal-solid);
+    outline-offset: 2px;
+    border-radius: 4px;
+  }
+
+  ::selection {
+    background-color: var(--qb-teal);
+    color: var(--qb-on-teal);
+  }
+
+  /* Slim rather than hidden - a hidden scrollbar removes a real affordance. */
+  ::-webkit-scrollbar { width: 10px; height: 10px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb {
+    background: color-mix(in srgb, var(--qb-muted) 35%, transparent);
+    border-radius: 999px;
+    border: 3px solid transparent;
+    background-clip: content-box;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background: color-mix(in srgb, var(--qb-muted) 60%, transparent);
+    background-clip: content-box;
+  }
+}
+
+@layer components {
+  .qb-card {
+    background-color: var(--qb-surface);
+    border: 1px solid var(--qb-line);
+    border-radius: 0.875rem;
+  }
+
+  .qb-shadow {
+    box-shadow: 0 1px 2px rgb(var(--qb-shadow) / 0.04),
+                0 8px 24px -12px rgb(var(--qb-shadow) / 0.12);
+  }
+
+  .qb-shadow-lg {
+    box-shadow: 0 2px 4px rgb(var(--qb-shadow) / 0.05),
+                0 18px 48px -18px rgb(var(--qb-shadow) / 0.22);
+  }
+
+  /* Hides the bar without removing the ability to scroll the region. */
+  .qb-scroll-x {
+    scrollbar-width: thin;
+    scrollbar-color: color-mix(in srgb, var(--qb-muted) 40%, transparent) transparent;
+  }
+}
+
+/* ---------------------------------------------------------------
+   Article body. Serif at a comfortable measure for long reading,
+   inheriting theme ink so it stays readable in both modes.
+   --------------------------------------------------------------- */
+.rich-text {
+  font-family: var(--font-serif);
+  font-size: 1.125rem;
+  line-height: 1.8;
+  color: var(--qb-ink);
+}
+
+.rich-text > * + * { margin-top: 1.4em; }
+
+.rich-text p { color: var(--qb-ink); }
+
+/* Editors emit <p><br></p> for a blank line. The paragraph rhythm above already
+   provides the spacing, so collapse these instead of leaving a double gap.
+   They stay in the DOM, so the following paragraph keeps its margin. */
+.rich-text p:empty,
+.rich-text p:has(> br:only-child) { display: none; }
+
+.rich-text h1,
+.rich-text h2,
+.rich-text h3,
+.rich-text h4,
+.rich-text h5,
+.rich-text h6 {
+  font-family: var(--font-sans);
+  color: var(--qb-ink);
+  font-weight: 650;
+  line-height: 1.25;
+  letter-spacing: -0.015em;
+  margin-top: 2em;
+  margin-bottom: 0.6em;
+  scroll-margin-top: 5rem;
+}
+
+.rich-text h1 { font-size: 2rem; }
+.rich-text h2 { font-size: 1.55rem; }
+.rich-text h3 { font-size: 1.3rem; }
+.rich-text h4 { font-size: 1.125rem; }
+.rich-text h5,
+.rich-text h6 { font-size: 1rem; text-transform: uppercase; letter-spacing: 0.06em; color: var(--qb-muted); }
+
+.rich-text strong { font-weight: 650; color: var(--qb-ink); }
+.rich-text em { font-style: italic; }
+
+.rich-text ul,
+.rich-text ol { padding-left: 1.4em; }
+.rich-text ul { list-style-type: disc; }
+.rich-text ol { list-style-type: decimal; }
+.rich-text li { margin-bottom: 0.5em; padding-left: 0.2em; }
+.rich-text li::marker { color: var(--qb-teal-ink); }
+
+/* Quill writes bullets as <ol><li data-list="bullet">. */
+.rich-text ol li[data-list="bullet"] { list-style-type: disc; }
+.rich-text .ql-ui { display: none; }
+.rich-text li.ql-indent-1 { margin-left: 1.5em; }
+.rich-text li.ql-indent-2 { margin-left: 3em; }
+
+.rich-text a {
+  color: var(--qb-teal-ink);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  text-decoration-thickness: 1px;
+}
+.rich-text a:hover { text-decoration-thickness: 2px; }
+
+.rich-text blockquote {
+  border-left: 3px solid var(--qb-teal);
+  padding: 0.2em 0 0.2em 1.2em;
+  color: var(--qb-muted);
+  font-style: italic;
+}
+
+.rich-text code {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 0.875em;
+  background-color: var(--qb-raised);
+  padding: 0.15em 0.4em;
+  border-radius: 4px;
+}
+
+.rich-text pre {
+  background-color: var(--qb-raised);
+  padding: 1rem 1.2rem;
+  border-radius: 0.6rem;
+  overflow-x: auto;
+}
+.rich-text pre code { background: none; padding: 0; }
+
+.rich-text img { border-radius: 0.6rem; max-width: 100%; height: auto; }
+
+.rich-text hr { border: 0; border-top: 1px solid var(--qb-line); }
+
+.rich-text table { width: 100%; border-collapse: collapse; font-family: var(--font-sans); font-size: 0.95rem; }
+.rich-text th,
+.rich-text td { border: 1px solid var(--qb-line); padding: 0.5em 0.75em; text-align: left; }
+.rich-text th { background-color: var(--qb-raised); font-weight: 600; }
+
+/* ---------------------------------------------------------------
+   Quill editor, themed so the admin composer matches the app.
+   --------------------------------------------------------------- */
+.ql-toolbar.ql-snow,
+.ql-container.ql-snow {
+  border-color: var(--qb-line) !important;
+}
+.ql-toolbar.ql-snow {
+  background-color: var(--qb-raised);
+  border-radius: 0.6rem 0.6rem 0 0;
+}
+.ql-container.ql-snow {
+  border-radius: 0 0 0.6rem 0.6rem;
+  background-color: var(--qb-surface);
+  font-family: var(--font-sans);
+  font-size: 0.95rem;
+}
+.ql-editor { color: var(--qb-ink); min-height: 14rem; }
+.ql-editor.ql-blank::before { color: var(--qb-muted) !important; font-style: normal; }
+/* Toolbar glyphs are controls, so they carry ink contrast rather than muted. */
+.ql-snow .ql-stroke { stroke: var(--qb-ink); }
+.ql-snow .ql-fill { fill: var(--qb-ink); }
+.ql-snow .ql-picker-label { color: var(--qb-ink); }
+.ql-snow .ql-picker-options { background-color: var(--qb-surface); border-color: var(--qb-line) !important; }
+.ql-snow.ql-toolbar button:hover .ql-stroke,
+.ql-snow.ql-toolbar button.ql-active .ql-stroke { stroke: var(--qb-teal-ink); }
+.ql-snow.ql-toolbar button:hover .ql-fill,
+.ql-snow.ql-toolbar button.ql-active .ql-fill { fill: var(--qb-teal-ink); }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}

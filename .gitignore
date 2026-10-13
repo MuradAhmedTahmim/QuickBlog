@@ -1,0 +1,24 @@
+node_modules
+
+# Secrets - never commit these. Both .env files hold environment specific
+# values; the server one holds the database URI and every API key.
+.env
+.env.*
+!.env.example
+server/.env
+client/.env
+
+# Build output
+dist
+build
+
+# Logs
+*.log
+npm-debug.log*
+
+# Editor / OS
+.vscode/*
+!.vscode/extensions.json
+.idea
+.DS_Store
+Thumbs.db

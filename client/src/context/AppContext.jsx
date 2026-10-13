@@ -1,0 +1,249 @@
+import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react'
+import axios from "axios";
+import { useNavigate } from 'react-router-dom'
+import toast from 'react-hot-toast';
+
+axios.defaults.baseURL = import.meta.env.VITE_BASE_URL;
+
+const AppContext = createContext();
+
+
+const safeStorage = {
+    get(key){
+        try { return localStorage.getItem(key) } catch { return null }
+    },
+    set(key, value){
+        try { localStorage.setItem(key, value) } catch { /* storage blocked */ }
+    },
+    remove(key){
+        try { localStorage.removeItem(key) } catch { /* storage blocked */ }
+    },
+}
+
+// Lets the server count an anonymous reader once instead of once per refresh.
+// It identifies a browser, never a person, and carries no personal data.
+const getVisitorId = () => {
+    let id = safeStorage.get('qb-visitor');
+    if(!id){
+        id = (crypto.randomUUID?.() || `${Date.now()}-${Math.random().toString(36).slice(2)}`).replace(/[^a-zA-Z0-9-]/g, '');
+        safeStorage.set('qb-visitor', id);
+    }
+    return id;
+}
+
+const applyTheme = (theme) => {
+    document.documentElement.classList.toggle('dark', theme === 'dark');
+}
+
+// Installed at module load rather than in an effect: child effects run before
+// the provider's, so a page opened straight on an article would otherwise fire
+// its request before these headers existed - and the view would go uncounted.
+axios.defaults.headers.common['x-visitor-id'] = getVisitorId();
+const storedToken = safeStorage.get('token');
+if(storedToken) axios.defaults.headers.common['Authorization'] = storedToken;
+
+export const AppProvider = ({ children })=>{
+
+    const navigate = useNavigate()
+
+    const [token, setToken] = useState(() => safeStorage.get('token'))
+    const [user, setUser] = useState(null)
+    const [blogs, setBlogs] = useState([])
+    const [blogsLoading, setBlogsLoading] = useState(true)
+    const [input, setInput] = useState("")
+
+    const [likedBlogs, setLikedBlogs] = useState(new Set())
+    const [bookmarkedBlogs, setBookmarkedBlogs] = useState(new Set())
+
+    const [authOpen, setAuthOpen] = useState(false)
+
+    // Matches whatever the bootstrap script in index.html already applied.
+    const [theme, setTheme] = useState(() =>
+        document.documentElement.classList.contains('dark') ? 'dark' : 'light'
+    )
+
+    const isAdmin = user?.role === 'admin'
+
+    /* ------------------------------- theme ------------------------------- */
+
+    const toggleTheme = useCallback(() => {
+        setTheme((current) => {
+            const next = current === 'dark' ? 'light' : 'dark';
+            applyTheme(next);
+            safeStorage.set('qb-theme', next);
+            return next;
+        })
+    }, [])
+
+    // Follow the system while the reader has not chosen for themselves.
+    useEffect(() => {
+        const media = window.matchMedia('(prefers-color-scheme: dark)');
+        const onChange = (event) => {
+            if(safeStorage.get('qb-theme')) return;
+            const next = event.matches ? 'dark' : 'light';
+            applyTheme(next);
+            setTheme(next);
+        }
+        media.addEventListener('change', onChange);
+        return () => media.removeEventListener('change', onChange);
+    }, [])
+
+    /* -------------------------------- auth ------------------------------- */
+
+    const applyToken = useCallback((value) => {
+        if(value){
+            safeStorage.set('token', value);
+            axios.defaults.headers.common['Authorization'] = value;
+        }else{
+            safeStorage.remove('token');
+            delete axios.defaults.headers.common['Authorization'];
+        }
+        setToken(value || null);
+    }, [])
+
+    const logout = useCallback(() => {
+        applyToken(null);
+        setUser(null);
+        setLikedBlogs(new Set());
+        setBookmarkedBlogs(new Set());
+        toast.success('Signed out');
+    }, [applyToken])
+
+    const fetchEngagement = useCallback(async () => {
+        try {
+            const {data} = await axios.get('/api/user/engagement');
+            if(data.success){
+                setLikedBlogs(new Set(data.likedBlogs));
+                setBookmarkedBlogs(new Set(data.bookmarkedBlogs));
+            }
+        } catch {
+            /* engagement state is an enhancement - the page still works without it */
+        }
+    }, [])
+
+    const loadSession = useCallback(async () => {
+        try {
+            const {data} = await axios.get('/api/user/me');
+            if(data.success){
+                setUser(data.user);
+                await fetchEngagement();
+                return;
+            }
+        } catch (error) {
+            // A rejected token is stale; anything else may just be the network.
+            if(error?.response?.status === 401){
+                applyToken(null);
+                setUser(null);
+            }
+        }
+    }, [applyToken, fetchEngagement])
+
+    const authenticate = useCallback(async (mode, payload) => {
+        const {data} = await axios.post(`/api/user/${mode}`, payload);
+        if(!data.success) return data;
+
+        applyToken(data.token);
+        setUser(data.user);
+        await fetchEngagement();
+        return data;
+    }, [applyToken, fetchEngagement])
+
+    /* ------------------------------- blogs ------------------------------- */
+
+    const fetchBlogs = useCallback(async ()=>{
+        try {
+           const {data} = await axios.get('/api/blog/all');
+           data.success ? setBlogs(data.blogs) : toast.error(data.message)
+        } catch {
+            toast.error('Could not load blogs. Is the server running?')
+        } finally {
+            setBlogsLoading(false)
+        }
+    }, [])
+
+    /* ---------------------------- engagement ----------------------------- */
+
+    // Returns false when the reader needs an account, so callers can prompt.
+    const requireAuth = useCallback(() => {
+        if(user) return true;
+        setAuthOpen(true);
+        return false;
+    }, [user])
+
+    const toggleLike = useCallback(async (blogId) => {
+        if(!requireAuth()) return null;
+        try {
+            const {data} = await axios.post('/api/blog/like', {blogId});
+            if(!data.success){
+                toast.error(data.message);
+                return null;
+            }
+            setLikedBlogs((current) => {
+                const next = new Set(current);
+                data.liked ? next.add(blogId) : next.delete(blogId);
+                return next;
+            })
+            // Keep the cached list in step so counts match across pages.
+            setBlogs((current) => current.map((blog) =>
+                blog._id === blogId ? {...blog, likesCount: data.likes} : blog
+            ))
+            return data;
+        } catch {
+            toast.error('Could not save your like. Please try again.')
+            return null;
+        }
+    }, [requireAuth])
+
+    const toggleBookmark = useCallback(async (blogId) => {
+        if(!requireAuth()) return null;
+        try {
+            const {data} = await axios.post('/api/user/bookmark', {blogId});
+            if(!data.success){
+                toast.error(data.message);
+                return null;
+            }
+            setBookmarkedBlogs((current) => {
+                const next = new Set(current);
+                data.bookmarked ? next.add(blogId) : next.delete(blogId);
+                return next;
+            })
+            toast.success(data.message);
+            return data;
+        } catch {
+            toast.error('Could not update your saved list. Please try again.')
+            return null;
+        }
+    }, [requireAuth])
+
+    /* ------------------------------ startup ------------------------------ */
+
+    useEffect(()=>{
+        fetchBlogs();
+    },[fetchBlogs])
+
+    useEffect(() => {
+        if(token) loadSession();
+    }, [token, loadSession])
+
+    const value = useMemo(() => ({
+        axios, navigate,
+        token, setToken: applyToken, user, setUser, isAdmin, logout, authenticate, loadSession,
+        blogs, setBlogs, blogsLoading, fetchBlogs,
+        input, setInput,
+        theme, toggleTheme,
+        likedBlogs, bookmarkedBlogs, toggleLike, toggleBookmark, requireAuth,
+        authOpen, setAuthOpen,
+    }), [navigate, token, applyToken, user, isAdmin, logout, authenticate, loadSession,
+         blogs, blogsLoading, fetchBlogs, input, theme, toggleTheme,
+         likedBlogs, bookmarkedBlogs, toggleLike, toggleBookmark, requireAuth, authOpen])
+
+    return (
+        <AppContext.Provider value={value}>
+            {children}
+        </AppContext.Provider>
+    )
+}
+
+export const useAppContext = ()=>{
+    return useContext(AppContext)
+};

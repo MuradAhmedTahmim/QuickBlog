@@ -10,13 +10,13 @@ import EmptyState from '../components/EmptyState'
 import LikeButton from '../components/LikeButton'
 import SaveButton from '../components/SaveButton'
 import AuthorChip from '../components/AuthorChip'
-import { ArrowLeftIcon, ClockIcon, CommentIcon, EyeIcon, UserIcon } from '../components/Icons'
+import { ArrowLeftIcon, ClockIcon, CommentIcon, EyeIcon } from '../components/Icons'
 import { useAppContext } from '../context/AppContext'
 import { compactNumber, initials } from '../utils/format'
 
 const Blog = () => {
   const { id } = useParams()
-  const { axios, blogs } = useAppContext()
+  const { axios, blogs, t, n } = useAppContext()
 
   const [data, setData] = useState(null)
   const [notFound, setNotFound] = useState(false)
@@ -65,14 +65,14 @@ const Blog = () => {
     try {
       const { data: result } = await axios.post('/api/blog/add-comment', { blog: id, name, content })
       if (result.success) {
-        toast.success(result.message)
+        toast.success(t('article.commentQueued'))
         setName('')
         setContent('')
       } else {
         toast.error(result.message)
       }
     } catch {
-      toast.error('Could not post your comment. Please try again.')
+      toast.error(t('article.postFailed'))
     } finally {
       setPosting(false)
     }
@@ -86,11 +86,11 @@ const Blog = () => {
           <div className="qb-card">
             <EmptyState
               icon={CommentIcon}
-              title="Article not found"
-              description="It may have been removed or unpublished."
+              title={t('article.notFoundTitle')}
+              description={t('article.notFoundBody')}
               action={
                 <Link to="/" className="inline-block px-5 py-2.5 rounded-full bg-tealsolid text-onteal text-sm font-medium hover:opacity-90 transition-opacity">
-                  Back to all articles
+                  {t('article.backToAll')}
                 </Link>
               }
             />
@@ -105,7 +105,7 @@ const Blog = () => {
     return (
       <div className="min-h-screen flex flex-col">
         <Navbar />
-        <Loader label="Loading article" />
+        <Loader label={t('article.loading')} />
       </div>
     )
   }
@@ -121,11 +121,11 @@ const Blog = () => {
           {/* Header */}
           <header className="max-w-3xl mx-auto px-5 sm:px-8 pt-10 sm:pt-14">
             <Link to="/" className="inline-flex items-center gap-1.5 text-sm text-muted hover:text-tealink transition-colors">
-              <ArrowLeftIcon className="w-4 h-4" /> All articles
+              <ArrowLeftIcon className="w-4 h-4" /> {t('article.allArticles')}
             </Link>
 
             <div className="mt-6 flex items-center gap-2.5 text-xs">
-              <span className="px-2.5 py-1 rounded-full bg-tealsoft text-tealink font-medium">{data.category}</span>
+              <span className="px-2.5 py-1 rounded-full bg-tealsoft text-tealink font-medium">{t(`categories.${data.category}`)}</span>
               <time dateTime={data.createdAt} className="text-muted">
                 {Moment(data.createdAt).format('MMMM D, YYYY')}
               </time>
@@ -140,17 +140,17 @@ const Blog = () => {
             )}
 
             <div className="mt-7 pb-7 border-b border-line flex flex-wrap items-center justify-between gap-4">
-              <AuthorChip author={data.author} size="lg" subtitle={data.author?.bio ? null : 'Writer at QuickBlog'} />
+              <AuthorChip author={data.author} size="lg" subtitle={data.author?.bio ? null : t('article.writerAt')} />
 
               <div className="flex items-center gap-3.5 text-xs text-muted">
-                <span className="inline-flex items-center gap-1.5" title={`About ${data.readingTime || 1} minute read`}>
-                  <ClockIcon className="w-4 h-4" /> {data.readingTime || 1} min read
+                <span className="inline-flex items-center gap-1.5" title={t('common.readTimeHint', { n: data.readingTime || 1 })}>
+                  <ClockIcon className="w-4 h-4" /> {t('common.minRead', { n: data.readingTime || 1 })}
                 </span>
-                <span className="inline-flex items-center gap-1.5" title={`${data.views || 0} total views`}>
-                  <EyeIcon className="w-4 h-4" /> {compactNumber(data.views || 0)}
+                <span className="inline-flex items-center gap-1.5" title={t('article.viewsHint', { n: data.views || 0 })}>
+                  <EyeIcon className="w-4 h-4" /> {n(compactNumber(data.views || 0))}
                 </span>
                 <span className="inline-flex items-center gap-1.5">
-                  <CommentIcon className="w-4 h-4" /> {comments.length}
+                  <CommentIcon className="w-4 h-4" /> {n(comments.length)}
                 </span>
               </div>
             </div>
@@ -160,6 +160,7 @@ const Blog = () => {
             <img src={data.image} alt="" className="w-full rounded-2xl aspect-[16/9] object-cover" />
           </figure>
 
+          {/* Article content is shown exactly as written - never translated. */}
           <div
             className="rich-text max-w-3xl mx-auto px-5 sm:px-8 mt-12"
             dangerouslySetInnerHTML={{ __html: data.description }}
@@ -168,7 +169,7 @@ const Blog = () => {
           {/* Reactions */}
           <div className="max-w-3xl mx-auto px-5 sm:px-8 mt-14">
             <div className="qb-card p-5 flex flex-wrap items-center justify-between gap-4">
-              <p className="text-sm text-muted">Found this useful?</p>
+              <p className="text-sm text-muted">{t('article.useful')}</p>
               <div className="flex items-center gap-2.5">
                 <LikeButton blogId={data._id} count={data.likesCount || 0} />
                 <SaveButton blogId={data._id} variant="full" />
@@ -180,11 +181,11 @@ const Blog = () => {
         {/* Comments */}
         <section aria-labelledby="comments-heading" className="max-w-3xl mx-auto px-5 sm:px-8 mt-14">
           <h2 id="comments-heading" className="text-xl font-semibold tracking-tight text-ink">
-            Comments {comments.length > 0 && <span className="text-muted font-normal">({comments.length})</span>}
+            {t('article.comments')} {comments.length > 0 && <span className="text-muted font-normal">({n(comments.length)})</span>}
           </h2>
 
           {comments.length === 0 ? (
-            <p className="mt-4 text-sm text-muted">No comments yet. Start the conversation below.</p>
+            <p className="mt-4 text-sm text-muted">{t('article.noComments')}</p>
           ) : (
             <ul className="mt-6 flex flex-col gap-4">
               {comments.map((item) => (
@@ -207,24 +208,24 @@ const Blog = () => {
           )}
 
           <form onSubmit={addComment} className="qb-card p-5 sm:p-6 mt-8">
-            <h3 className="text-base font-semibold text-ink">Leave a comment</h3>
-            <p className="mt-1 text-xs text-muted">Comments are reviewed before they appear.</p>
+            <h3 className="text-base font-semibold text-ink">{t('article.leaveComment')}</h3>
+            <p className="mt-1 text-xs text-muted">{t('article.moderationNote')}</p>
 
             <div className="mt-4 flex flex-col gap-3.5">
               <div>
-                <label htmlFor="comment-name" className="block text-xs font-medium text-muted mb-1.5">Name</label>
+                <label htmlFor="comment-name" className="block text-xs font-medium text-muted mb-1.5">{t('common.name')}</label>
                 <input
                   id="comment-name" value={name} onChange={(event) => setName(event.target.value)}
-                  required minLength={2} maxLength={60} className={field} placeholder="Your name"
+                  required minLength={2} maxLength={60} className={field} placeholder={t('auth.namePlaceholder')}
                 />
               </div>
 
               <div>
-                <label htmlFor="comment-body" className="block text-xs font-medium text-muted mb-1.5">Comment</label>
+                <label htmlFor="comment-body" className="block text-xs font-medium text-muted mb-1.5">{t('article.commentLabel')}</label>
                 <textarea
                   id="comment-body" value={content} onChange={(event) => setContent(event.target.value)}
                   required minLength={2} maxLength={1000} rows={4}
-                  className={`${field} resize-y`} placeholder="Share your thoughts"
+                  className={`${field} resize-y`} placeholder={t('article.commentPlaceholder')}
                 />
               </div>
 
@@ -232,7 +233,7 @@ const Blog = () => {
                 type="submit" disabled={posting}
                 className="self-start px-5 py-2.5 rounded-full bg-tealsolid text-onteal text-sm font-medium hover:opacity-90 disabled:opacity-60 transition-opacity cursor-pointer"
               >
-                {posting ? 'Posting...' : 'Post comment'}
+                {posting ? t('article.posting') : t('article.post')}
               </button>
             </div>
           </form>
@@ -242,7 +243,7 @@ const Blog = () => {
         {related.length > 0 && (
           <section aria-labelledby="related-heading" className="max-w-7xl mx-auto px-5 sm:px-8 mt-20">
             <h2 id="related-heading" className="text-xl font-semibold tracking-tight text-ink mb-6">
-              More in {data.category}
+              {t('article.moreIn', { category: t(`categories.${data.category}`) })}
             </h2>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
               {related.map((blog) => <BlogCard key={blog._id} blog={blog} />)}

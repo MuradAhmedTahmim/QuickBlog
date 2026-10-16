@@ -5,7 +5,7 @@ import { BookmarkIcon } from './Icons'
 // Saving is optimistic in feel but the server stays authoritative: the context
 // only records the new state once the request comes back.
 const SaveButton = ({ blogId, variant = 'icon', className = '' }) => {
-  const { bookmarkedBlogs, toggleBookmark } = useAppContext()
+  const { bookmarkedBlogs, toggleBookmark, t } = useAppContext()
   const [busy, setBusy] = useState(false)
 
   const saved = bookmarkedBlogs.has(blogId)
@@ -19,20 +19,20 @@ const SaveButton = ({ blogId, variant = 'icon', className = '' }) => {
     setBusy(false)
   }
 
-  const label = saved ? 'Remove from saved' : 'Save for later'
+  const label = saved ? t('engage.removeSaved') : t('engage.saveForLater')
 
   if (variant === 'full') {
     return (
       <button
         type="button" onClick={onClick} disabled={busy}
-        aria-pressed={saved} title={label}
+        aria-pressed={saved} aria-label={label} title={label}
         className={`inline-flex items-center gap-2 px-4 py-2 rounded-full border text-sm font-medium
           transition-colors disabled:opacity-60 cursor-pointer
           ${saved ? 'border-tealsolid bg-tealsoft text-tealink' : 'border-line text-muted hover:text-tealink hover:border-tealsolid/50'}
           ${className}`}
       >
         <BookmarkIcon filled={saved} className="w-[18px] h-[18px]" />
-        {saved ? 'Saved' : 'Save'}
+        {saved ? t('engage.saved') : t('engage.save')}
       </button>
     )
   }

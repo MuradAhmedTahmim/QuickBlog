@@ -2,12 +2,13 @@ import { useEffect, useRef, useState } from 'react'
 import { Link, NavLink, useNavigate } from 'react-router-dom'
 import { useAppContext } from '../context/AppContext'
 import ThemeToggle from './ThemeToggle'
+import LanguageToggle from './LanguageToggle'
 import { BookmarkIcon, LogOutIcon, MenuIcon, CloseIcon, UserIcon, Wordmark } from './Icons'
 import { initials } from '../utils/format'
 
 const Navbar = () => {
   const navigate = useNavigate()
-  const { user, isAdmin, logout, setAuthOpen } = useAppContext()
+  const { user, isAdmin, logout, setAuthOpen, t } = useAppContext()
 
   const [menuOpen, setMenuOpen] = useState(false)
   const [mobileOpen, setMobileOpen] = useState(false)
@@ -32,17 +33,18 @@ const Navbar = () => {
   return (
     <header className="sticky top-0 z-40 bg-canvas/85 backdrop-blur-md border-b border-line">
       <nav className="max-w-7xl mx-auto px-5 sm:px-8 h-16 flex items-center justify-between gap-4">
-        <Link to="/" aria-label="QuickBlog home" className="text-ink shrink-0">
+        <Link to="/" aria-label={t('nav.homeAria')} className="text-ink shrink-0">
           <Wordmark className="text-sm sm:text-base" />
         </Link>
 
         <div className="hidden md:flex items-center gap-7">
-          <NavLink to="/" end className={navLink}>Home</NavLink>
-          <NavLink to="/saved" className={navLink}>Saved</NavLink>
-          {isAdmin && <NavLink to="/admin" className={navLink}>Dashboard</NavLink>}
+          <NavLink to="/" end className={navLink}>{t('nav.home')}</NavLink>
+          <NavLink to="/saved" className={navLink}>{t('nav.saved')}</NavLink>
+          {isAdmin && <NavLink to="/admin" className={navLink}>{t('nav.dashboard')}</NavLink>}
         </div>
 
-        <div className="flex items-center gap-2.5">
+        <div className="flex items-center gap-2">
+          <LanguageToggle />
           <ThemeToggle />
 
           {user ? (
@@ -72,20 +74,20 @@ const Navbar = () => {
                     to="/saved" role="menuitem" onClick={() => setMenuOpen(false)}
                     className="flex items-center gap-2.5 px-3.5 py-2.5 text-sm text-ink hover:bg-raised transition-colors"
                   >
-                    <BookmarkIcon className="w-4 h-4 text-muted" /> Saved articles
+                    <BookmarkIcon className="w-4 h-4 text-muted" /> {t('nav.savedArticles')}
                   </Link>
                   <Link
                     to={`/author/${user._id}`} role="menuitem" onClick={() => setMenuOpen(false)}
                     className="flex items-center gap-2.5 px-3.5 py-2.5 text-sm text-ink hover:bg-raised transition-colors"
                   >
-                    <UserIcon className="w-4 h-4 text-muted" /> My profile
+                    <UserIcon className="w-4 h-4 text-muted" /> {t('nav.myProfile')}
                   </Link>
                   <button
                     type="button" role="menuitem"
                     onClick={() => { setMenuOpen(false); logout(); navigate('/') }}
                     className="w-full flex items-center gap-2.5 px-3.5 py-2.5 text-sm text-ink hover:bg-raised transition-colors cursor-pointer"
                   >
-                    <LogOutIcon className="w-4 h-4 text-muted" /> Sign out
+                    <LogOutIcon className="w-4 h-4 text-muted" /> {t('nav.signOut')}
                   </button>
                 </div>
               )}
@@ -94,16 +96,16 @@ const Navbar = () => {
             <button
               type="button"
               onClick={() => setAuthOpen(true)}
-              className="px-4 sm:px-5 py-2 rounded-full bg-tealsolid text-onteal text-sm font-medium hover:opacity-90 transition-opacity cursor-pointer"
+              className="px-4 sm:px-5 py-2 rounded-full bg-tealsolid text-onteal text-sm font-medium hover:opacity-90 transition-opacity cursor-pointer whitespace-nowrap"
             >
-              Sign in
+              {t('nav.signIn')}
             </button>
           )}
 
           <button
             type="button"
             onClick={() => setMobileOpen((open) => !open)}
-            aria-label="Menu" aria-expanded={mobileOpen}
+            aria-label={t('nav.menu')} aria-expanded={mobileOpen}
             className="md:hidden grid place-items-center w-9 h-9 rounded-full border border-line text-muted cursor-pointer"
           >
             {mobileOpen ? <CloseIcon className="w-[18px] h-[18px]" /> : <MenuIcon className="w-[18px] h-[18px]" />}
@@ -113,9 +115,9 @@ const Navbar = () => {
 
       {mobileOpen && (
         <div className="md:hidden border-t border-line px-5 py-3 flex flex-col gap-1">
-          <NavLink to="/" end onClick={() => setMobileOpen(false)} className="py-2 text-sm text-ink">Home</NavLink>
-          <NavLink to="/saved" onClick={() => setMobileOpen(false)} className="py-2 text-sm text-ink">Saved</NavLink>
-          {isAdmin && <NavLink to="/admin" onClick={() => setMobileOpen(false)} className="py-2 text-sm text-ink">Dashboard</NavLink>}
+          <NavLink to="/" end onClick={() => setMobileOpen(false)} className="py-2 text-sm text-ink">{t('nav.home')}</NavLink>
+          <NavLink to="/saved" onClick={() => setMobileOpen(false)} className="py-2 text-sm text-ink">{t('nav.saved')}</NavLink>
+          {isAdmin && <NavLink to="/admin" onClick={() => setMobileOpen(false)} className="py-2 text-sm text-ink">{t('nav.dashboard')}</NavLink>}
         </div>
       )}
     </header>

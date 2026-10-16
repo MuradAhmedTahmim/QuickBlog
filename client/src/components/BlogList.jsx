@@ -46,7 +46,7 @@ const CardSkeleton = () => (
 const BlogList = () => {
   const [menu, setMenu] = useState("All")
   const AnimatedPill = useAnimatedPill()
-  const { blogs, blogsLoading, input, setInput } = useAppContext()
+  const { blogs, blogsLoading, input, setInput, t, n } = useAppContext()
 
   // Search covers the title, subtitle and category so a topic word still finds it.
   const results = useMemo(() => {
@@ -65,22 +65,28 @@ const BlogList = () => {
     return map
   }, [blogs])
 
+  const heading = input
+    ? t('list.resultsFor', { term: input })
+    : menu === 'All' ? t('list.latest') : t(`categories.${menu}`)
+
   return (
     <section aria-labelledby="articles-heading" className="min-w-0">
       <div className="flex flex-wrap items-end justify-between gap-4 mb-6">
         <div>
           <h2 id="articles-heading" className="text-xl font-semibold tracking-tight text-ink">
-            {input ? `Results for "${input}"` : menu === 'All' ? 'Latest articles' : menu}
+            {heading}
           </h2>
           <p className="mt-1 text-sm text-muted">
-            {blogsLoading ? 'Loading articles...' : `${results.length} article${results.length === 1 ? '' : 's'}`}
+            {blogsLoading
+              ? t('list.loading')
+              : t(results.length === 1 ? 'list.countOne' : 'list.count', { n: results.length })}
           </p>
         </div>
       </div>
 
       {/* Category filter. One row, above everything it scopes. */}
       <div className="qb-scroll-x -mx-1 px-1 mb-7 overflow-x-auto">
-        <div role="tablist" aria-label="Filter by category" className="flex gap-2 w-max">
+        <div role="tablist" aria-label={t('list.filterLabel')} className="flex gap-2 w-max">
           {blogCategories.map((item) => {
             const active = menu === item
             return (
@@ -91,10 +97,10 @@ const BlogList = () => {
                   ${active ? 'text-onteal' : 'text-muted hover:text-ink border border-line'}`}
               >
                 {active && (AnimatedPill ? <AnimatedPill /> : <StaticPill />)}
-                {item}
+                {t(`categories.${item}`)}
                 {counts[item] > 0 && (
                   <span className={`ml-1.5 text-xs tabular-nums ${active ? 'text-onteal/70' : 'text-muted/70'}`}>
-                    {counts[item]}
+                    {n(counts[item])}
                   </span>
                 )}
               </button>
@@ -111,17 +117,15 @@ const BlogList = () => {
         <div className="qb-card">
           <EmptyState
             icon={SearchIcon}
-            title={input ? 'No articles match that search' : 'Nothing here yet'}
-            description={input
-              ? 'Try a different word, or browse another category.'
-              : 'Once articles are published in this category they will appear here.'}
+            title={input ? t('list.emptySearchTitle') : t('list.emptyTitle')}
+            description={input ? t('list.emptySearchBody') : t('list.emptyBody')}
             action={input && (
               <button
                 type="button"
                 onClick={() => { setInput(''); setMenu('All') }}
                 className="px-5 py-2.5 rounded-full bg-tealsolid text-onteal text-sm font-medium hover:opacity-90 transition-opacity cursor-pointer"
               >
-                Clear search
+                {t('list.clearSearch')}
               </button>
             )}
           />

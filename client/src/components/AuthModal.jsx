@@ -6,7 +6,7 @@ import { CloseIcon } from './Icons'
 // One dialog for both sign in and sign up, opened whenever an action needs an
 // account (liking, saving) so the reader never loses their place.
 const AuthModal = () => {
-  const { authOpen, setAuthOpen, authenticate } = useAppContext()
+  const { authOpen, setAuthOpen, authenticate, t } = useAppContext()
 
   const [mode, setMode] = useState('login')
   const [name, setName] = useState('')
@@ -60,14 +60,14 @@ const AuthModal = () => {
       const payload = mode === 'register' ? { name, email, password } : { email, password }
       const data = await authenticate(mode, payload)
       if (data.success) {
-        toast.success(mode === 'register' ? `Welcome, ${data.user.name}!` : `Welcome back, ${data.user.name}!`)
+        toast.success(t(mode === 'register' ? 'auth.welcomeNew' : 'auth.welcomeBack', { name: data.user.name }))
         setAuthOpen(false)
         setName(''); setEmail(''); setPassword('')
       } else {
         toast.error(data.message)
       }
     } catch {
-      toast.error('Something went wrong. Please try again.')
+      toast.error(t('auth.failed'))
     } finally {
       setBusy(false)
     }
@@ -90,52 +90,50 @@ const AuthModal = () => {
         <button
           type="button"
           onClick={() => setAuthOpen(false)}
-          aria-label="Close"
+          aria-label={t('common.close')}
           className="absolute top-4 right-4 text-muted hover:text-ink transition-colors cursor-pointer"
         >
           <CloseIcon className="w-5 h-5" />
         </button>
 
         <h2 id="auth-title" className="text-xl font-semibold text-ink">
-          {mode === 'register' ? 'Create your account' : 'Welcome back'}
+          {t(mode === 'register' ? 'auth.createTitle' : 'auth.welcomeTitle')}
         </h2>
         <p className="mt-1 text-sm text-muted">
-          {mode === 'register'
-            ? 'Save articles and like the ones you enjoy.'
-            : 'Sign in to pick up where you left off.'}
+          {t(mode === 'register' ? 'auth.createSubtitle' : 'auth.welcomeSubtitle')}
         </p>
 
         <form onSubmit={submit} className="mt-5 flex flex-col gap-3.5">
           {mode === 'register' && (
             <div>
-              <label htmlFor="auth-name" className="block text-xs font-medium text-muted mb-1.5">Name</label>
+              <label htmlFor="auth-name" className="block text-xs font-medium text-muted mb-1.5">{t('common.name')}</label>
               <input
                 id="auth-name" ref={mode === 'register' ? firstFieldRef : null}
                 value={name} onChange={(e) => setName(e.target.value)}
                 required minLength={2} maxLength={60} autoComplete="name"
-                className={field} placeholder="Your name"
+                className={field} placeholder={t('auth.namePlaceholder')}
               />
             </div>
           )}
 
           <div>
-            <label htmlFor="auth-email" className="block text-xs font-medium text-muted mb-1.5">Email</label>
+            <label htmlFor="auth-email" className="block text-xs font-medium text-muted mb-1.5">{t('common.email')}</label>
             <input
               id="auth-email" ref={mode === 'login' ? firstFieldRef : null}
               type="email" value={email} onChange={(e) => setEmail(e.target.value)}
               required autoComplete="email"
-              className={field} placeholder="you@example.com"
+              className={field} placeholder={t('auth.emailPlaceholder')}
             />
           </div>
 
           <div>
-            <label htmlFor="auth-password" className="block text-xs font-medium text-muted mb-1.5">Password</label>
+            <label htmlFor="auth-password" className="block text-xs font-medium text-muted mb-1.5">{t('common.password')}</label>
             <input
               id="auth-password" type="password" value={password}
               onChange={(e) => setPassword(e.target.value)}
               required minLength={6}
               autoComplete={mode === 'register' ? 'new-password' : 'current-password'}
-              className={field} placeholder={mode === 'register' ? 'At least 6 characters' : 'Your password'}
+              className={field} placeholder={t(mode === 'register' ? 'auth.passwordNew' : 'auth.passwordCurrent')}
             />
           </div>
 
@@ -144,18 +142,18 @@ const AuthModal = () => {
             className="mt-1 w-full py-2.5 rounded-lg bg-tealsolid text-onteal font-medium
               hover:opacity-90 disabled:opacity-60 transition-opacity cursor-pointer"
           >
-            {busy ? 'Please wait...' : mode === 'register' ? 'Create account' : 'Sign in'}
+            {busy ? t('auth.wait') : t(mode === 'register' ? 'auth.createAccount' : 'auth.signIn')}
           </button>
         </form>
 
         <p className="mt-4 text-center text-sm text-muted">
-          {mode === 'register' ? 'Already have an account?' : "Don't have an account?"}{' '}
+          {t(mode === 'register' ? 'auth.haveAccount' : 'auth.noAccount')}{' '}
           <button
             type="button"
             onClick={() => setMode(mode === 'register' ? 'login' : 'register')}
             className="text-tealink font-medium hover:underline cursor-pointer"
           >
-            {mode === 'register' ? 'Sign in' : 'Sign up'}
+            {t(mode === 'register' ? 'auth.signIn' : 'auth.signUp')}
           </button>
         </p>
       </div>

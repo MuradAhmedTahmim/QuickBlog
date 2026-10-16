@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300..800&family=Source+Serif+4:opsz,wght@8..60,400;8..60,600&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300..800&family=Source+Serif+4:opsz,wght@8..60,400;8..60,600&family=Noto+Sans+Bengali:wght@300..700&family=Noto+Serif+Bengali:wght@400;600&display=swap');
 @import "tailwindcss";
 
 /* Theme is driven by a class on <html>, set before paint by the bootstrap
@@ -78,8 +78,10 @@
   /* Kept so any stray `primary` utility still resolves to the new accent. */
   --color-primary:    var(--qb-teal-solid);
 
-  --font-sans:   "Outfit", ui-sans-serif, system-ui, sans-serif;
-  --font-serif:  "Source Serif 4", ui-serif, Georgia, serif;
+  /* The browser picks per glyph: Latin from Outfit, Bengali from Noto Sans
+     Bengali, so one stack serves both languages without any switching. */
+  --font-sans:   "Outfit", "Noto Sans Bengali", ui-sans-serif, system-ui, sans-serif;
+  --font-serif:  "Source Serif 4", "Noto Serif Bengali", ui-serif, Georgia, serif;
 }
 
 @layer base {

@@ -7,17 +7,17 @@ import { EditIcon, EyeIcon, HeartIcon, TrashIcon } from '../Icons'
 import { compactNumber } from '../../utils/format'
 
 const BlogTableItem = ({ blog, fetchBlogs, index }) => {
-  const { axios } = useAppContext()
+  const { axios, t, n } = useAppContext()
   const [busy, setBusy] = useState(false)
 
   const deleteBlog = async () => {
-    if (!window.confirm(`Delete "${blog.title}"? Its comments will be removed too. This cannot be undone.`)) return
+    if (!window.confirm(t('admin.confirmDeleteBlog', { title: blog.title }))) return
     setBusy(true)
     try {
       const { data } = await axios.post('/api/blog/delete', { id: blog._id })
-      data.success ? (toast.success(data.message), await fetchBlogs()) : toast.error(data.message)
+      data.success ? (toast.success(t('admin.blogDeleted')), await fetchBlogs()) : toast.error(data.message)
     } catch {
-      toast.error('Could not delete the blog.')
+      toast.error(t('admin.deleteBlogFailed'))
     } finally {
       setBusy(false)
     }
@@ -27,9 +27,9 @@ const BlogTableItem = ({ blog, fetchBlogs, index }) => {
     setBusy(true)
     try {
       const { data } = await axios.post('/api/blog/toggle-publish', { id: blog._id })
-      data.success ? (toast.success(data.message), await fetchBlogs()) : toast.error(data.message)
+      data.success ? (toast.success(t('admin.statusUpdated')), await fetchBlogs()) : toast.error(data.message)
     } catch {
-      toast.error('Could not update the blog.')
+      toast.error(t('admin.updateBlogFailed'))
     } finally {
       setBusy(false)
     }
@@ -37,16 +37,16 @@ const BlogTableItem = ({ blog, fetchBlogs, index }) => {
 
   return (
     <tr className="border-b border-line last:border-0">
-      <td className="px-4 py-3.5 text-muted tabular-nums">{index}</td>
+      <td className="px-4 py-3.5 text-muted tabular-nums">{n(index)}</td>
 
       <td className="px-4 py-3.5">
         <Link to={`/blog/${blog._id}`} className="font-medium text-ink hover:text-tealink transition-colors line-clamp-1">
           {blog.title}
         </Link>
         <span className="mt-0.5 flex items-center gap-3 text-xs text-muted">
-          <span>{blog.category}</span>
-          <span className="inline-flex items-center gap-1"><EyeIcon className="w-3.5 h-3.5" />{compactNumber(blog.views || 0)}</span>
-          <span className="inline-flex items-center gap-1"><HeartIcon className="w-3.5 h-3.5" />{compactNumber(blog.likesCount || 0)}</span>
+          <span>{t(`categories.${blog.category}`)}</span>
+          <span className="inline-flex items-center gap-1"><EyeIcon className="w-3.5 h-3.5" />{n(compactNumber(blog.views || 0))}</span>
+          <span className="inline-flex items-center gap-1"><HeartIcon className="w-3.5 h-3.5" />{n(compactNumber(blog.likesCount || 0))}</span>
         </span>
       </td>
 
@@ -58,7 +58,7 @@ const BlogTableItem = ({ blog, fetchBlogs, index }) => {
         <span className={`inline-block px-2.5 py-1 rounded-full text-xs font-medium ${
           blog.isPublished ? 'bg-tealsoft text-tealink' : 'bg-raised text-muted'
         }`}>
-          {blog.isPublished ? 'Published' : 'Draft'}
+          {blog.isPublished ? t('admin.publishedLabel') : t('admin.draftLabel')}
         </span>
       </td>
 
@@ -68,18 +68,18 @@ const BlogTableItem = ({ blog, fetchBlogs, index }) => {
             type="button" onClick={togglePublish} disabled={busy}
             className="px-3 py-1.5 rounded-full border border-line text-xs text-muted hover:text-tealink hover:border-tealsolid/50 disabled:opacity-60 transition-colors cursor-pointer whitespace-nowrap"
           >
-            {blog.isPublished ? 'Unpublish' : 'Publish'}
+            {blog.isPublished ? t('admin.unpublish') : t('admin.publish')}
           </button>
           <Link
             to={`/admin/editBlog/${blog._id}`}
-            aria-label={`Edit ${blog.title}`} title="Edit"
+            aria-label={t('admin.editAria', { title: blog.title })} title={t('admin.editArticle')}
             className="grid place-items-center w-8 h-8 rounded-full text-muted hover:text-tealink hover:bg-tealsoft transition-colors"
           >
             <EditIcon className="w-4 h-4" />
           </Link>
           <button
             type="button" onClick={deleteBlog} disabled={busy}
-            aria-label={`Delete ${blog.title}`} title="Delete"
+            aria-label={t('admin.deleteAria', { title: blog.title })} title={t('admin.deleteAria', { title: blog.title })}
             className="grid place-items-center w-8 h-8 rounded-full text-muted hover:text-red-600 hover:bg-red-500/10 disabled:opacity-60 transition-colors cursor-pointer"
           >
             <TrashIcon className="w-4 h-4" />

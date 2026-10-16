@@ -8,11 +8,13 @@ import EmptyState from '../components/EmptyState'
 import Loader from '../components/Loader'
 import { DraftIcon, UserIcon } from '../components/Icons'
 import { useAppContext } from '../context/AppContext'
-import { initials, plural } from '../utils/format'
+import { initials } from '../utils/format'
+
+const BIO_MAX = 400
 
 const Author = () => {
   const { authorId } = useParams()
-  const { axios, user, setUser } = useAppContext()
+  const { axios, user, setUser, t } = useAppContext()
 
   const [author, setAuthor] = useState(null)
   const [blogs, setBlogs] = useState([])
@@ -69,7 +71,7 @@ const Author = () => {
 
       const { data } = await axios.post('/api/user/profile', body)
       if (data.success) {
-        toast.success(data.message)
+        toast.success(t('author.profileUpdated'))
         setUser(data.user)
         setAuthor((current) => ({ ...current, name: data.user.name, bio: data.user.bio, image: data.user.image }))
         setAvatar(null)
@@ -78,7 +80,7 @@ const Author = () => {
         toast.error(data.message)
       }
     } catch {
-      toast.error('Could not save your profile. Please try again.')
+      toast.error(t('author.saveFailed'))
     } finally {
       setSaving(false)
     }
@@ -88,7 +90,7 @@ const Author = () => {
     return (
       <div className="min-h-screen flex flex-col">
         <Navbar />
-        <Loader label="Loading profile" />
+        <Loader label={t('author.loading')} />
       </div>
     )
   }
@@ -99,7 +101,7 @@ const Author = () => {
         <Navbar />
         <main className="flex-1 max-w-3xl w-full mx-auto px-5 py-16">
           <div className="qb-card">
-            <EmptyState icon={UserIcon} title="Author not found" description="This profile may have been removed." />
+            <EmptyState icon={UserIcon} title={t('author.notFoundTitle')} description={t('author.notFoundBody')} />
           </div>
         </main>
         <Footer />
@@ -127,11 +129,11 @@ const Author = () => {
             <div className="min-w-0">
               <h1 className="text-2xl sm:text-3xl font-semibold tracking-tight">{author.name}</h1>
               <p className="mt-1.5 text-sm text-onnavy/65">
-                {plural(blogs.length, 'published article')}
+                {t(blogs.length === 1 ? 'author.publishedOne' : 'author.published', { n: blogs.length })}
               </p>
               {author.bio
                 ? <p className="mt-3 max-w-2xl text-sm sm:text-base text-onnavy/75 leading-relaxed">{author.bio}</p>
-                : <p className="mt-3 text-sm text-onnavy/50 italic">No bio yet.</p>}
+                : <p className="mt-3 text-sm text-onnavy/50 italic">{t('author.noBio')}</p>}
             </div>
 
             {isOwner && !editing && (
@@ -139,7 +141,7 @@ const Author = () => {
                 type="button" onClick={() => setEditing(true)}
                 className="sm:ml-auto px-4 py-2 rounded-full border border-onnavy/25 text-sm hover:bg-onnavy/10 transition-colors cursor-pointer shrink-0"
               >
-                Edit profile
+                {t('author.edit')}
               </button>
             )}
           </div>
@@ -149,14 +151,14 @@ const Author = () => {
       <main className="flex-1 max-w-5xl w-full mx-auto px-5 sm:px-8 py-12">
         {isOwner && editing && (
           <form onSubmit={saveProfile} className="qb-card p-6 mb-10 max-w-xl">
-            <h2 className="text-base font-semibold text-ink">Edit your profile</h2>
+            <h2 className="text-base font-semibold text-ink">{t('author.editTitle')}</h2>
 
             <div className="mt-4">
-              <span className="block text-xs font-medium text-muted mb-1.5">Profile picture</span>
+              <span className="block text-xs font-medium text-muted mb-1.5">{t('author.picture')}</span>
               <label htmlFor="profile-image" className="flex items-center gap-3 w-fit cursor-pointer group">
                 {avatarPreview || author.image ? (
                   <img
-                    src={avatarPreview || author.image} alt="Profile picture preview"
+                    src={avatarPreview || author.image} alt={t('author.picturePreview')}
                     className="w-14 h-14 rounded-full object-cover"
                   />
                 ) : (
@@ -165,7 +167,7 @@ const Author = () => {
                   </span>
                 )}
                 <span className="text-sm text-muted group-hover:text-tealink transition-colors">
-                  {avatar ? avatar.name : 'Choose a picture'}
+                  {avatar ? avatar.name : t('author.choosePicture')}
                 </span>
                 <input
                   id="profile-image" type="file" accept="image/*" hidden
@@ -175,7 +177,7 @@ const Author = () => {
             </div>
 
             <div className="mt-4">
-              <label htmlFor="profile-name" className="block text-xs font-medium text-muted mb-1.5">Display name</label>
+              <label htmlFor="profile-name" className="block text-xs font-medium text-muted mb-1.5">{t('author.displayName')}</label>
               <input
                 id="profile-name" value={name} onChange={(event) => setName(event.target.value)}
                 required minLength={2} maxLength={60} className={field}
@@ -184,12 +186,13 @@ const Author = () => {
 
             <div className="mt-4">
               <label htmlFor="profile-bio" className="block text-xs font-medium text-muted mb-1.5">
-                Bio <span className="text-muted/70">({bio.length}/400)</span>
+                {t('author.bio')}{' '}
+                <span className="text-muted/70">{t('author.bioCount', { used: bio.length, max: BIO_MAX })}</span>
               </label>
               <textarea
                 id="profile-bio" value={bio} onChange={(event) => setBio(event.target.value)}
-                maxLength={400} rows={4} className={`${field} resize-y`}
-                placeholder="A sentence or two about what you write."
+                maxLength={BIO_MAX} rows={4} className={`${field} resize-y`}
+                placeholder={t('author.bioPlaceholder')}
               />
             </div>
 
@@ -198,27 +201,27 @@ const Author = () => {
                 type="submit" disabled={saving}
                 className="px-5 py-2.5 rounded-full bg-tealsolid text-onteal text-sm font-medium hover:opacity-90 disabled:opacity-60 transition-opacity cursor-pointer"
               >
-                {saving ? 'Saving...' : 'Save changes'}
+                {saving ? t('common.saving') : t('common.save')}
               </button>
               <button
                 type="button"
                 onClick={() => { setEditing(false); setName(author.name); setBio(author.bio || ''); setAvatar(null) }}
                 className="px-5 py-2.5 rounded-full border border-line text-sm text-muted hover:text-ink transition-colors cursor-pointer"
               >
-                Cancel
+                {t('common.cancel')}
               </button>
             </div>
           </form>
         )}
 
-        <h2 className="text-xl font-semibold tracking-tight text-ink mb-6">Articles</h2>
+        <h2 className="text-xl font-semibold tracking-tight text-ink mb-6">{t('author.articles')}</h2>
 
         {blogs.length === 0 ? (
           <div className="qb-card">
             <EmptyState
               icon={DraftIcon}
-              title="No published articles yet"
-              description={isOwner ? 'Anything you publish will show up here.' : 'This author has not published anything yet.'}
+              title={t('author.emptyOwn')}
+              description={isOwner ? t('author.emptyOwnBody') : t('author.emptyOtherBody')}
             />
           </div>
         ) : (

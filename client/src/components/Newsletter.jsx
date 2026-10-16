@@ -5,7 +5,7 @@ import { MailIcon } from './Icons'
 
 // Now backed by a real endpoint - the address is stored, not thrown away.
 const Newsletter = () => {
-  const { axios } = useAppContext()
+  const { axios, t } = useAppContext()
   const [email, setEmail] = useState('')
   const [busy, setBusy] = useState(false)
   const [done, setDone] = useState(false)
@@ -16,14 +16,14 @@ const Newsletter = () => {
     try {
       const { data } = await axios.post('/api/blog/subscribe', { email })
       if (data.success) {
-        toast.success(data.message)
+        toast.success(t('newsletter.subscribed'))
         setEmail('')
         setDone(true)
       } else {
         toast.error(data.message)
       }
     } catch {
-      toast.error('Could not subscribe right now. Please try again.')
+      toast.error(t('newsletter.failed'))
     } finally {
       setBusy(false)
     }
@@ -37,30 +37,30 @@ const Newsletter = () => {
         </span>
 
         <h2 className="mt-4 text-2xl sm:text-3xl font-semibold tracking-tight text-ink">
-          Never miss a story
+          {t('newsletter.title')}
         </h2>
         <p className="mt-2 mx-auto max-w-md text-sm sm:text-base text-muted">
-          One email when something new goes up. No noise, unsubscribe whenever.
+          {t('newsletter.subtitle')}
         </p>
 
         {done ? (
           <p className="mt-7 text-sm font-medium text-tealink">
-            You are on the list. Thanks for reading.
+            {t('newsletter.done')}
           </p>
         ) : (
           <form onSubmit={submit} className="mt-7 mx-auto max-w-md flex flex-col sm:flex-row gap-2.5">
-            <label htmlFor="newsletter-email" className="sr-only">Email address</label>
+            <label htmlFor="newsletter-email" className="sr-only">{t('newsletter.emailLabel')}</label>
             <input
               id="newsletter-email" type="email" required
               value={email} onChange={(event) => setEmail(event.target.value)}
-              placeholder="you@example.com" autoComplete="email"
+              placeholder={t('newsletter.placeholder')} autoComplete="email"
               className="flex-1 px-4 py-3 rounded-full bg-canvas border border-line text-ink placeholder:text-muted/70 outline-none focus:border-tealsolid transition-colors text-sm"
             />
             <button
               type="submit" disabled={busy}
               className="px-6 py-3 rounded-full bg-tealsolid text-onteal text-sm font-medium hover:opacity-90 disabled:opacity-60 transition-opacity cursor-pointer whitespace-nowrap"
             >
-              {busy ? 'Subscribing...' : 'Subscribe'}
+              {busy ? t('newsletter.subscribing') : t('newsletter.subscribe')}
             </button>
           </form>
         )}

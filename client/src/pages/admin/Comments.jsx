@@ -10,18 +10,18 @@ const Comments = () => {
   const [comments, setComments] = useState([])
   const [loading, setLoading] = useState(true)
   const [filter, setFilter] = useState('Not Approved')
-  const { axios } = useAppContext()
+  const { axios, t } = useAppContext()
 
   const fetchComments = useCallback(async () => {
     try {
       const { data } = await axios.get('/api/admin/comments')
       data.success ? setComments(data.comments) : toast.error(data.message)
     } catch {
-      toast.error('Could not load comments.')
+      toast.error(t('admin.commentsFailed'))
     } finally {
       setLoading(false)
     }
-  }, [axios])
+  }, [axios, t])
 
   useEffect(() => { fetchComments() }, [fetchComments])
 
@@ -30,15 +30,15 @@ const Comments = () => {
   )
   const pending = comments.filter((comment) => !comment.isApproved).length
 
-  if (loading) return <Loader label="Loading comments" />
+  if (loading) return <Loader label={t('admin.loadingComments')} />
 
   return (
     <div className="p-5 sm:p-8">
       <header className="flex flex-wrap items-end justify-between gap-4 mb-6">
         <div>
-          <h1 className="text-xl font-semibold tracking-tight text-ink">Comments</h1>
+          <h1 className="text-xl font-semibold tracking-tight text-ink">{t('admin.commentsTitle')}</h1>
           <p className="mt-1 text-sm text-muted">
-            {pending > 0 ? `${pending} awaiting review` : 'Everything is reviewed'}
+            {pending > 0 ? t('admin.awaitingReview', { n: pending }) : t('admin.everythingReviewed')}
           </p>
         </div>
 
@@ -51,7 +51,7 @@ const Comments = () => {
                 filter === item ? 'bg-tealsolid text-onteal font-medium' : 'border border-line text-muted hover:text-ink'
               }`}
             >
-              {item === 'Not Approved' ? 'Pending' : 'Approved'}
+              {item === 'Not Approved' ? t('admin.pending') : t('admin.approved')}
             </button>
           ))}
         </div>
@@ -61,10 +61,8 @@ const Comments = () => {
         <div className="qb-card">
           <EmptyState
             icon={CommentIcon}
-            title={filter === 'Approved' ? 'No approved comments yet' : 'Nothing waiting for review'}
-            description={filter === 'Approved'
-              ? 'Comments you approve will be listed here.'
-              : 'New comments will appear here before they go live.'}
+            title={filter === 'Approved' ? t('admin.noApproved') : t('admin.nothingPending')}
+            description={filter === 'Approved' ? t('admin.noApprovedBody') : t('admin.nothingPendingBody')}
           />
         </div>
       ) : (
@@ -73,9 +71,9 @@ const Comments = () => {
             <table className="w-full text-sm">
               <thead>
                 <tr className="text-xs text-muted text-left border-b border-line bg-raised/40">
-                  <th scope="col" className="px-4 py-3 font-medium">Comment</th>
-                  <th scope="col" className="px-4 py-3 font-medium max-sm:hidden">Date</th>
-                  <th scope="col" className="px-4 py-3 font-medium">Action</th>
+                  <th scope="col" className="px-4 py-3 font-medium">{t('admin.commentColumn')}</th>
+                  <th scope="col" className="px-4 py-3 font-medium max-sm:hidden">{t('common.date')}</th>
+                  <th scope="col" className="px-4 py-3 font-medium">{t('common.actions')}</th>
                 </tr>
               </thead>
               <tbody>

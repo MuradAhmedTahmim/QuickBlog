@@ -1,12 +1,13 @@
 import { useMemo, useState } from 'react'
 import Moment from 'moment'
+import { useAppContext } from '../../context/AppContext'
 
 // Three series over fourteen days. Colours are the validated categorical slots
 // from the theme (--qb-series-*), re-stepped per mode in index.css.
 const SERIES = [
-  { key: 'uniqueViews', label: 'Unique readers', color: 'var(--qb-series-1)' },
-  { key: 'likes',       label: 'Likes',          color: 'var(--qb-series-2)' },
-  { key: 'comments',    label: 'Comments',       color: 'var(--qb-series-3)' },
+  { key: 'uniqueViews', labelKey: 'admin.seriesViews',    color: 'var(--qb-series-1)' },
+  { key: 'likes',       labelKey: 'admin.seriesLikes',    color: 'var(--qb-series-2)' },
+  { key: 'comments',    labelKey: 'admin.seriesComments', color: 'var(--qb-series-3)' },
 ]
 
 const WIDTH = 720
@@ -14,6 +15,7 @@ const HEIGHT = 240
 const PAD = { top: 16, right: 56, bottom: 30, left: 36 }
 
 const EngagementChart = ({ series }) => {
+  const { t, n } = useAppContext()
   const [hover, setHover] = useState(null)
   const [asTable, setAsTable] = useState(false)
 
@@ -39,7 +41,7 @@ const EngagementChart = ({ series }) => {
       })),
     ]))
 
-    return { points, max, plotWidth, plotHeight, stepX }
+    return { points, max, plotHeight, stepX }
   }, [series, days.length])
 
   const total = useMemo(
@@ -67,9 +69,9 @@ const EngagementChart = ({ series }) => {
     <section className="qb-card p-5">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
-          <h2 className="text-sm font-semibold text-ink">Engagement, last 14 days</h2>
+          <h2 className="text-sm font-semibold text-ink">{t('admin.chartTitle')}</h2>
           <p className="mt-0.5 text-xs text-muted">
-            {total === 0 ? 'No activity recorded yet in this window' : 'New unique readers, likes and comments per day'}
+            {total === 0 ? t('admin.chartEmpty') : t('admin.chartSubtitle')}
           </p>
         </div>
 
@@ -78,16 +80,16 @@ const EngagementChart = ({ series }) => {
           onClick={() => setAsTable((value) => !value)}
           className="px-3 py-1.5 rounded-full border border-line text-xs text-muted hover:text-tealink hover:border-tealsolid/50 transition-colors cursor-pointer"
         >
-          {asTable ? 'Show chart' : 'Show table'}
+          {asTable ? t('admin.showChart') : t('admin.showTable')}
         </button>
       </div>
 
       {/* Legend - identity never rests on colour alone. */}
       <ul className="mt-4 flex flex-wrap gap-x-5 gap-y-2">
-        {SERIES.map(({ key, label, color }) => (
+        {SERIES.map(({ key, labelKey, color }) => (
           <li key={key} className="flex items-center gap-2 text-xs text-muted">
             <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ background: color }} />
-            {label}
+            {t(labelKey)}
           </li>
         ))}
       </ul>
@@ -95,12 +97,12 @@ const EngagementChart = ({ series }) => {
       {asTable ? (
         <div className="mt-4 overflow-x-auto qb-scroll-x">
           <table className="w-full text-sm">
-            <caption className="sr-only">Daily engagement for the last 14 days</caption>
+            <caption className="sr-only">{t('admin.chartCaption')}</caption>
             <thead>
               <tr className="text-xs text-muted text-left border-b border-line">
-                <th scope="col" className="py-2 pr-4 font-medium">Date</th>
-                {SERIES.map(({ key, label }) => (
-                  <th key={key} scope="col" className="py-2 pr-4 font-medium text-right">{label}</th>
+                <th scope="col" className="py-2 pr-4 font-medium">{t('common.date')}</th>
+                {SERIES.map(({ key, labelKey }) => (
+                  <th key={key} scope="col" className="py-2 pr-4 font-medium text-right">{t(labelKey)}</th>
                 ))}
               </tr>
             </thead>
@@ -112,7 +114,7 @@ const EngagementChart = ({ series }) => {
                   </th>
                   {SERIES.map(({ key }) => (
                     <td key={key} className="py-2 pr-4 text-right tabular-nums text-ink">
-                      {series[key]?.[index] ?? 0}
+                      {n(series[key]?.[index] ?? 0)}
                     </td>
                   ))}
                 </tr>
@@ -126,7 +128,7 @@ const EngagementChart = ({ series }) => {
             viewBox={`0 0 ${WIDTH} ${HEIGHT}`}
             className="w-full h-auto"
             role="img"
-            aria-label={`Line chart of unique readers, likes and comments per day over the last 14 days. ${total} events in total.`}
+            aria-label={t('admin.chartAria', { n: total })}
             onMouseMove={onMove}
             onMouseLeave={() => setHover(null)}
           >
@@ -141,7 +143,7 @@ const EngagementChart = ({ series }) => {
                   x={PAD.left - 8} y={y + 4} textAnchor="end"
                   className="tabular-nums" fontSize="10" fill="var(--qb-muted)"
                 >
-                  {value}
+                  {n(value)}
                 </text>
               </g>
             ))}
@@ -185,7 +187,7 @@ const EngagementChart = ({ series }) => {
                     x={last.x + 10} y={last.y + 4}
                     fontSize="11" fontWeight="600" fill={color} className="tabular-nums"
                   >
-                    {last.value}
+                    {n(last.value)}
                   </text>
 
                   {hover !== null && line[hover] && (
@@ -207,14 +209,14 @@ const EngagementChart = ({ series }) => {
                 transform: `translateX(${hover > days.length / 2 ? '-110%' : '12px'})`,
               }}
             >
-              <p className="font-medium text-ink whitespace-nowrap">{Moment(days[hover]).format('MMM D, YYYY')}</p>
+              <p className="font-medium text-ink whitespace-nowrap">{Moment(days[hover]).format('MMMM D, YYYY')}</p>
               <ul className="mt-1.5 space-y-1">
-                {SERIES.map(({ key, label, color }) => (
+                {SERIES.map(({ key, labelKey, color }) => (
                   <li key={key} className="flex items-center gap-2 whitespace-nowrap text-muted">
                     <span className="w-2 h-2 rounded-full shrink-0" style={{ background: color }} />
-                    {label}
+                    {t(labelKey)}
                     <span className="ml-auto pl-3 tabular-nums font-medium text-ink">
-                      {series[key]?.[hover] ?? 0}
+                      {n(series[key]?.[hover] ?? 0)}
                     </span>
                   </li>
                 ))}

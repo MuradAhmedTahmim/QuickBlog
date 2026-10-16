@@ -2,6 +2,7 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useState } 
 import axios from "axios";
 import { useNavigate } from 'react-router-dom'
 import toast from 'react-hot-toast';
+import { DEFAULT_LANGUAGE, LANGUAGES, applyLanguage, localizeDigits, translate } from '../i18n'
 
 axios.defaults.baseURL = import.meta.env.VITE_BASE_URL;
 
@@ -35,6 +36,15 @@ const applyTheme = (theme) => {
     document.documentElement.classList.toggle('dark', theme === 'dark');
 }
 
+const readLanguage = () => {
+    const saved = safeStorage.get('qb-lang');
+    return LANGUAGES.includes(saved) ? saved : DEFAULT_LANGUAGE;
+}
+
+// Set before React renders so the very first paint already uses the right
+// locale for dates and the right lang attribute for screen readers.
+applyLanguage(readLanguage());
+
 // Installed at module load rather than in an effect: child effects run before
 // the provider's, so a page opened straight on an article would otherwise fire
 // its request before these headers existed - and the view would go uncounted.
@@ -62,6 +72,8 @@ export const AppProvider = ({ children })=>{
         document.documentElement.classList.contains('dark') ? 'dark' : 'light'
     )
 
+    const [language, setLanguageState] = useState(readLanguage)
+
     const isAdmin = user?.role === 'admin'
 
     /* ------------------------------- theme ------------------------------- */
@@ -88,6 +100,29 @@ export const AppProvider = ({ children })=>{
         return () => media.removeEventListener('change', onChange);
     }, [])
 
+    /* ------------------------------ language ----------------------------- */
+
+    const setLanguage = useCallback((next) => {
+        if(!LANGUAGES.includes(next)) return;
+        applyLanguage(next);
+        safeStorage.set('qb-lang', next);
+        setLanguageState(next);
+    }, [])
+
+    const toggleLanguage = useCallback(() => {
+        setLanguage(language === 'bn' ? 'en' : 'bn');
+    }, [language, setLanguage])
+
+    // The interface reads every string through t(); article content is never
+    // passed through it, so blogs stay exactly as their author wrote them.
+    const t = useCallback(
+        (key, values) => translate(language, key, values),
+        [language]
+    )
+
+    // Numbers shown in the interface follow the language's own numerals.
+    const n = useCallback((value) => localizeDigits(value, language), [language])
+
     /* -------------------------------- auth ------------------------------- */
 
     const applyToken = useCallback((value) => {
@@ -106,7 +141,7 @@ export const AppProvider = ({ children })=>{
         setUser(null);
         setLikedBlogs(new Set());
         setBookmarkedBlogs(new Set());
-        toast.success('Signed out');
+        toast.success(translate(readLanguage(), 'auth.signedOut'));
     }, [applyToken])
 
     const fetchEngagement = useCallback(async () => {
@@ -155,7 +190,7 @@ export const AppProvider = ({ children })=>{
            const {data} = await axios.get('/api/blog/all');
            data.success ? setBlogs(data.blogs) : toast.error(data.message)
         } catch {
-            toast.error('Could not load blogs. Is the server running?')
+            toast.error(translate(readLanguage(), 'errors.blogsFailed'))
         } finally {
             setBlogsLoading(false)
         }
@@ -189,10 +224,10 @@ export const AppProvider = ({ children })=>{
             ))
             return data;
         } catch {
-            toast.error('Could not save your like. Please try again.')
+            toast.error(t('engage.likeFailed'))
             return null;
         }
-    }, [requireAuth])
+    }, [requireAuth, t])
 
     const toggleBookmark = useCallback(async (blogId) => {
         if(!requireAuth()) return null;
@@ -207,13 +242,13 @@ export const AppProvider = ({ children })=>{
                 data.bookmarked ? next.add(blogId) : next.delete(blogId);
                 return next;
             })
-            toast.success(data.message);
+            toast.success(t(data.bookmarked ? 'engage.savedToast' : 'engage.removedToast'));
             return data;
         } catch {
-            toast.error('Could not update your saved list. Please try again.')
+            toast.error(t('engage.bookmarkFailed'))
             return null;
         }
-    }, [requireAuth])
+    }, [requireAuth, t])
 
     /* ------------------------------ startup ------------------------------ */
 
@@ -231,10 +266,12 @@ export const AppProvider = ({ children })=>{
         blogs, setBlogs, blogsLoading, fetchBlogs,
         input, setInput,
         theme, toggleTheme,
+        language, setLanguage, toggleLanguage, t, n,
         likedBlogs, bookmarkedBlogs, toggleLike, toggleBookmark, requireAuth,
         authOpen, setAuthOpen,
     }), [navigate, token, applyToken, user, isAdmin, logout, authenticate, loadSession,
          blogs, blogsLoading, fetchBlogs, input, theme, toggleTheme,
+         language, setLanguage, toggleLanguage, t, n,
          likedBlogs, bookmarkedBlogs, toggleLike, toggleBookmark, requireAuth, authOpen])
 
     return (

@@ -5,9 +5,11 @@ import SaveButton from './SaveButton'
 import LikeButton from './LikeButton'
 import AuthorChip from './AuthorChip'
 import { compactNumber, excerpt } from '../utils/format'
+import { useAppContext } from '../context/AppContext'
 
 // The single lead article: a wider, calmer layout than the grid cards.
 const FeaturedBlog = ({ blog }) => {
+  const { t, n } = useAppContext()
   if (!blog) return null
 
   const { _id, title, description, image, category, readingTime, views, likesCount, author, createdAt } = blog
@@ -23,8 +25,8 @@ const FeaturedBlog = ({ blog }) => {
 
       <div className="p-6 sm:p-9 flex flex-col justify-center">
         <div className="flex items-center gap-2.5 text-xs">
-          <span className="px-2.5 py-1 rounded-full bg-tealsoft text-tealink font-medium">Featured</span>
-          <span className="text-muted">{category}</span>
+          <span className="px-2.5 py-1 rounded-full bg-tealsoft text-tealink font-medium">{t('featured.badge')}</span>
+          <span className="text-muted">{t(`categories.${category}`)}</span>
         </div>
 
         <h2 className="mt-4 text-2xl sm:text-3xl font-semibold tracking-tight leading-tight text-ink">
@@ -39,17 +41,17 @@ const FeaturedBlog = ({ blog }) => {
           <AuthorChip author={author} size="lg" subtitle={Moment(createdAt).format('MMMM D, YYYY')} />
 
           <div className="flex items-center gap-3 text-xs text-muted">
-            <span className="inline-flex items-center gap-1"><ClockIcon className="w-4 h-4" />{readingTime || 1} min read</span>
-            {views > 0 && <span className="inline-flex items-center gap-1"><EyeIcon className="w-4 h-4" />{compactNumber(views)}</span>}
+            <span className="inline-flex items-center gap-1"><ClockIcon className="w-4 h-4" />{t('common.minRead', { n: readingTime || 1 })}</span>
+            {views > 0 && <span className="inline-flex items-center gap-1"><EyeIcon className="w-4 h-4" />{n(compactNumber(views))}</span>}
           </div>
         </div>
 
-        <div className="mt-6 pt-6 border-t border-line flex items-center gap-3">
+        <div className="mt-6 pt-6 border-t border-line flex items-center gap-3 flex-wrap">
           <Link
             to={`/blog/${_id}`}
             className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-tealsolid text-onteal text-sm font-medium hover:opacity-90 transition-opacity"
           >
-            Read article <ArrowRightIcon className="w-4 h-4" />
+            {t('featured.read')} <ArrowRightIcon className="w-4 h-4" />
           </Link>
           <LikeButton blogId={_id} count={likesCount || 0} />
           <SaveButton blogId={_id} variant="full" />

@@ -16,7 +16,7 @@ const CATEGORIES = blogCategories.filter((category) => category !== 'All')
 // Serves both /admin/addBlog and /admin/editBlog/:id - the only differences are
 // where the initial values come from and which endpoint the form posts to.
 const AddBlog = () => {
-    const { axios, navigate } = useAppContext()
+    const { axios, navigate, t } = useAppContext()
     const { id } = useParams()
     const isEdit = Boolean(id)
 
@@ -34,7 +34,6 @@ const AddBlog = () => {
     const [subTitle, setSubTitle] = useState('');
     const [category, setCategory] = useState('Startup');
     const [isPublished, setIsPublished] = useState(false);
-
     const [initialContent, setInitialContent] = useState('');
 
     useEffect(() => {
@@ -43,7 +42,7 @@ const AddBlog = () => {
         if (!quillRef.current && editorRef.current) {
             quillRef.current = new Quill(editorRef.current, {
                 theme: 'snow',
-                placeholder: 'Write your article, or generate a first draft with AI...',
+                placeholder: t('admin.editorPlaceholder'),
                 modules: {
                     toolbar: [
                         [{ header: [2, 3, 4, false] }],
@@ -59,7 +58,7 @@ const AddBlog = () => {
             // already exists when the loaded content is written into it.
             if (initialContent) quillRef.current.root.innerHTML = initialContent
         }
-    }, [loadingBlog, initialContent])
+    }, [loadingBlog, initialContent, t])
 
     // Load the blog being edited and prefill every field.
     const loadBlog = useCallback(async () => {
@@ -78,10 +77,10 @@ const AddBlog = () => {
             setInitialContent(data.blog.description)
             setLoadingBlog(false)
         } catch {
-            toast.error('Could not load the article.')
+            toast.error(t('admin.loadArticleFailed'))
             navigate('/admin/listBlog')
         }
-    }, [axios, id, navigate])
+    }, [axios, id, navigate, t])
 
     useEffect(() => {
         if (isEdit) loadBlog()
@@ -96,7 +95,7 @@ const AddBlog = () => {
     }, [image])
 
     const generateContent = async () => {
-        if (!title.trim()) return toast.error('Enter a title first, it becomes the prompt')
+        if (!title.trim()) return toast.error(t('admin.generateNeedsTitle'))
 
         try {
             setLoading(true);
@@ -107,7 +106,7 @@ const AddBlog = () => {
                 toast.error(data.message)
             }
         } catch {
-            toast.error('Could not generate content right now.')
+            toast.error(t('admin.generateFailed'))
         } finally {
             setLoading(false)
         }
@@ -118,9 +117,9 @@ const AddBlog = () => {
 
         const description = quillRef.current?.root.innerHTML || ''
         // On an edit the existing thumbnail is kept unless a new one is chosen.
-        if (!isEdit && !image) return toast.error('Please choose a thumbnail')
+        if (!isEdit && !image) return toast.error(t('admin.needThumbnail'))
         if (quillRef.current?.getText().trim().length < 10) {
-            return toast.error('Please write some content first')
+            return toast.error(t('admin.needContent'))
         }
 
         try {
@@ -136,7 +135,7 @@ const AddBlog = () => {
             const { data } = await axios.post(isEdit ? '/api/blog/update' : '/api/blog/add', formData);
 
             if (data.success) {
-                toast.success(data.message);
+                toast.success(t(isEdit ? 'admin.blogUpdated' : 'admin.blogAdded'));
                 if (isEdit) {
                     navigate('/admin/listBlog')
                 } else {
@@ -151,13 +150,13 @@ const AddBlog = () => {
                 toast.error(data.message)
             }
         } catch (error) {
-            toast.error(error?.response?.data?.message || 'Could not save the article.')
+            toast.error(error?.response?.data?.message || t('admin.saveFailed'))
         } finally {
             setIsAdding(false)
         }
     }
 
-    if (loadingBlog) return <Loader label="Loading article" />
+    if (loadingBlog) return <Loader label={t('article.loading')} />
 
     const field = 'w-full px-3.5 py-2.5 rounded-lg bg-canvas border border-line text-ink placeholder:text-muted/70 outline-none focus:border-tealsolid transition-colors text-sm'
     const thumbnail = preview || currentImage
@@ -170,35 +169,33 @@ const AddBlog = () => {
                         type="button" onClick={() => navigate('/admin/listBlog')}
                         className="inline-flex items-center gap-1.5 mb-3 text-sm text-muted hover:text-tealink transition-colors cursor-pointer"
                     >
-                        <ArrowLeftIcon className="w-4 h-4" /> Back to all articles
+                        <ArrowLeftIcon className="w-4 h-4" /> {t('admin.backToList')}
                     </button>
                 )}
                 <h1 className="text-xl font-semibold tracking-tight text-ink">
-                    {isEdit ? 'Edit article' : 'New article'}
+                    {t(isEdit ? 'admin.editArticle' : 'admin.newArticle')}
                 </h1>
                 <p className="mt-1 text-sm text-muted">
-                    {isEdit
-                        ? 'Changes go live as soon as you save. Reading time is recalculated for you.'
-                        : 'Reading time is calculated automatically once you publish.'}
+                    {t(isEdit ? 'admin.editSubtitle' : 'admin.newSubtitle')}
                 </p>
             </header>
 
             <form onSubmit={onSubmitHandler} className="qb-card p-5 sm:p-7 max-w-3xl">
                 <div>
-                    <span className="block text-xs font-medium text-muted mb-1.5">Thumbnail</span>
+                    <span className="block text-xs font-medium text-muted mb-1.5">{t('admin.thumbnail')}</span>
                     <label
                         htmlFor="image"
                         className="flex items-center gap-4 p-3 rounded-lg border border-dashed border-line hover:border-tealsolid/60 transition-colors cursor-pointer w-fit"
                     >
                         {thumbnail ? (
-                            <img src={thumbnail} alt="Thumbnail preview" className="w-28 h-20 rounded object-cover" />
+                            <img src={thumbnail} alt={t('admin.thumbnailPreview')} className="w-28 h-20 rounded object-cover" />
                         ) : (
                             <span className="grid place-items-center w-28 h-20 rounded bg-raised text-muted">
                                 <ImageIcon className="w-6 h-6" />
                             </span>
                         )}
                         <span className="text-sm text-muted">
-                            {image ? image.name : isEdit ? 'Replace image (optional)' : 'Choose an image'}
+                            {image ? image.name : t(isEdit ? 'admin.replaceImage' : 'admin.chooseImage')}
                         </span>
                         <input
                             id="image" type="file" accept="image/*" hidden
@@ -208,32 +205,32 @@ const AddBlog = () => {
                 </div>
 
                 <div className="mt-5">
-                    <label htmlFor="blog-title" className="block text-xs font-medium text-muted mb-1.5">Title</label>
+                    <label htmlFor="blog-title" className="block text-xs font-medium text-muted mb-1.5">{t('admin.titleLabel')}</label>
                     <input
                         id="blog-title" type="text" required value={title}
                         onChange={(event) => setTitle(event.target.value)}
-                        placeholder="A clear, specific headline" className={field}
+                        placeholder={t('admin.titlePlaceholder')} className={field}
                     />
                 </div>
 
                 <div className="mt-4">
-                    <label htmlFor="blog-subtitle" className="block text-xs font-medium text-muted mb-1.5">Subtitle</label>
+                    <label htmlFor="blog-subtitle" className="block text-xs font-medium text-muted mb-1.5">{t('admin.subtitleLabel')}</label>
                     <input
                         id="blog-subtitle" type="text" required value={subTitle}
                         onChange={(event) => setSubTitle(event.target.value)}
-                        placeholder="One line that sets up the piece" className={field}
+                        placeholder={t('admin.subtitlePlaceholder')} className={field}
                     />
                 </div>
 
                 <div className="mt-4">
                     <div className="flex items-center justify-between gap-3 mb-1.5">
-                        <span className="text-xs font-medium text-muted">Content</span>
+                        <span className="text-xs font-medium text-muted">{t('admin.content')}</span>
                         <button
                             type="button" onClick={generateContent} disabled={loading}
                             className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-line text-xs text-muted hover:text-tealink hover:border-tealsolid/50 disabled:opacity-60 transition-colors cursor-pointer"
                         >
                             <SparkleIcon className="w-3.5 h-3.5" />
-                            {loading ? 'Generating...' : 'Generate with AI'}
+                            {loading ? t('admin.generating') : t('admin.generate')}
                         </button>
                     </div>
 
@@ -249,13 +246,13 @@ const AddBlog = () => {
 
                 <div className="mt-5 flex flex-wrap items-end gap-5">
                     <div>
-                        <label htmlFor="blog-category" className="block text-xs font-medium text-muted mb-1.5">Category</label>
+                        <label htmlFor="blog-category" className="block text-xs font-medium text-muted mb-1.5">{t('admin.category')}</label>
                         <select
                             id="blog-category" value={category}
                             onChange={(event) => setCategory(event.target.value)}
                             className={`${field} w-auto pr-8`}
                         >
-                            {CATEGORIES.map((item) => <option key={item} value={item}>{item}</option>)}
+                            {CATEGORIES.map((item) => <option key={item} value={item}>{t(`categories.${item}`)}</option>)}
                         </select>
                     </div>
 
@@ -265,7 +262,7 @@ const AddBlog = () => {
                             onChange={(event) => setIsPublished(event.target.checked)}
                             className="w-4 h-4 accent-[var(--qb-teal-solid)] cursor-pointer"
                         />
-                        <span className="text-sm text-ink">{isEdit ? 'Published' : 'Publish immediately'}</span>
+                        <span className="text-sm text-ink">{t(isEdit ? 'admin.publishedLabel' : 'admin.publishNow')}</span>
                     </label>
                 </div>
 
@@ -274,8 +271,8 @@ const AddBlog = () => {
                     className="mt-7 px-6 py-2.5 rounded-full bg-tealsolid text-onteal text-sm font-medium hover:opacity-90 disabled:opacity-60 transition-opacity cursor-pointer"
                 >
                     {isAdding
-                        ? 'Saving...'
-                        : isEdit ? 'Save changes' : isPublished ? 'Publish article' : 'Save as draft'}
+                        ? t('common.saving')
+                        : isEdit ? t('common.save') : isPublished ? t('admin.publishArticle') : t('admin.saveDraft')}
                 </button>
             </form>
         </div>

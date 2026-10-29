@@ -22,10 +22,15 @@ const allowedOrigins = (process.env.CLIENT_URL || '')
 const corsOptions = allowedOrigins.length === 0 ? {} : {
     origin: (origin, callback) => {
         // Same-origin and server-to-server calls arrive without an Origin header.
-        if(!origin || allowedOrigins.includes(origin.replace(/\/$/, ''))){
-            return callback(null, true);
-        }
-        callback(new Error('Not allowed by CORS'));
+        const allowed = !origin || allowedOrigins.includes(origin.replace(/\/$/, ''));
+
+        // `false` withholds the CORS headers rather than raising an error, so a
+        // browser blocks the response while the request still gets a normal
+        // reply. Raising instead would answer 500, which reads like a server
+        // fault in the logs for what is only a misconfigured caller. CORS is
+        // not an authorisation mechanism either way - the write routes are
+        // behind JWT middleware, which a non-browser client cannot ignore.
+        callback(null, allowed);
     },
 };
 

@@ -1,6 +1,7 @@
 import express from 'express'
 import 'dotenv/config'
 import cors from 'cors'
+import mongoose from 'mongoose'
 import adminRouter from './routes/adminRoutes.js';
 import blogRouter from './routes/blogRoutes.js';
 import userRouter from './routes/userRoutes.js';
@@ -34,7 +35,17 @@ app.use(express.json())
 
 // Routes
 app.get('/', (req, res)=> res.send("API is Working"))
-app.get('/health', (req, res)=> res.json({success: true, status: 'ok', uptime: process.uptime()}))
+// A health check that did not report the database would not be worth much, so
+// it names the connection state. It runs no query, so it still answers while
+// the database is unreachable - which is exactly when it is needed.
+const DB_STATE = ['disconnected', 'connected', 'connecting', 'disconnecting'];
+
+app.get('/health', (req, res)=> res.json({
+    success: true,
+    status: 'ok',
+    uptime: process.uptime(),
+    database: DB_STATE[mongoose.connection.readyState] ?? 'unknown',
+}))
 app.use('/api/admin', adminRouter)
 app.use('/api/blog', blogRouter)
 app.use('/api/user', userRouter)

@@ -16,6 +16,9 @@ describe('health', () => {
         expect(health.status).toBe(200)
         expect(health.body.success).toBe(true)
         expect(health.body.status).toBe('ok')
+        // Reported without running a query, so it still answers when the
+        // database is the thing that is broken.
+        expect(health.body.database).toBe('connected')
     })
 })
 
@@ -121,36 +124,51 @@ describe('index creation ownership', () => {
     // down - which is exactly what happened on the first deploy of this
     // release. In production, schema.js owns indexes and Mongoose must not
     // touch them.
-    const connectWith = async (nodeEnv) => {
+    const connectWith = async (env) => {
         const captured = {};
         vi.resetModules()
         vi.doMock('mongoose', () => ({
             default: {
-                connection: {on: () => {}},
+                connection: {on: () => {}, readyState: 1},
+                models: {},
                 connect: async (uri, options) => { Object.assign(captured, options) },
             },
         }))
 
-        const previous = process.env.NODE_ENV;
-        process.env.NODE_ENV = nodeEnv;
+        const previous = {NODE_ENV: process.env.NODE_ENV, VERCEL: process.env.VERCEL};
+        if('NODE_ENV' in env) process.env.NODE_ENV = env.NODE_ENV;
+        else delete process.env.NODE_ENV;
+        if(env.VERCEL) process.env.VERCEL = env.VERCEL;
+        else delete process.env.VERCEL;
+
         try {
             const connectDB = (await import('../configs/db.js')).default;
             await connectDB();
         } finally {
-            process.env.NODE_ENV = previous;
+            process.env.NODE_ENV = previous.NODE_ENV;
+            if(previous.VERCEL) process.env.VERCEL = previous.VERCEL;
+            else delete process.env.VERCEL;
             vi.doUnmock('mongoose')
             vi.resetModules()
         }
         return captured;
     }
 
-    it('leaves indexes to database/schema.js in production', async () => {
-        expect((await connectWith('production')).autoIndex).toBe(false)
+    it.each([
+        ['production', {NODE_ENV: 'production'}],
+        ['an unset NODE_ENV', {}],
+        ['an unrecognised NODE_ENV', {NODE_ENV: 'staging'}],
+        ['Vercel, whatever NODE_ENV says', {NODE_ENV: 'development', VERCEL: '1'}],
+    ])('leaves indexes to database/schema.js in %s', async (_label, env) => {
+        // Anything that is not demonstrably a dev or test machine counts as
+        // production. That is the safe direction: the cost is having to run
+        // the schema script, which the install guide already requires.
+        expect((await connectWith(env)).autoIndex).toBe(false)
     })
 
-    it.each(['development', 'test'])('builds indexes automatically in %s', async (env) => {
+    it.each(['development', 'test'])('builds indexes automatically in %s', async (nodeEnv) => {
         // So a fresh local database works without running the script first.
-        expect((await connectWith(env)).autoIndex).toBe(true)
+        expect((await connectWith({NODE_ENV: nodeEnv})).autoIndex).toBe(true)
     })
 })
 

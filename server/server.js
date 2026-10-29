@@ -3,18 +3,22 @@ import app from './app.js'
 import connectDB from './configs/db.js';
 import bootstrap from './configs/bootstrap.js';
 
-await connectDB()
-
 // Bootstrap is idempotent housekeeping: it creates the admin from .env and
 // fills in fields older documents lack.
-//
-// On a long-running server it finishes before the first request, which is what
-// an operator watching the log expects. On Vercel every cold start would
-// otherwise pay for its round trips inside the function's timeout, so there it
-// runs in the background and the first request is not held up by it.
 if(process.env.VERCEL){
-    bootstrap().catch((error) => console.log('Bootstrap failed:', error.message))
+    // A serverless cold start has a hard time limit, and holding it open for
+    // an Atlas handshake plus bootstrap's round trips is what turns a slow
+    // start into a failed invocation. So nothing here is awaited: the module
+    // finishes loading at once, routes that need no data answer immediately,
+    // and Mongoose buffers the queries that do until the connection is up.
+    connectDB()
+        .then(bootstrap)
+        .catch((error) => console.log('Start-up failed:', error.message))
 }else{
+    // A long-running server has no such limit, so it finishes the housekeeping
+    // before accepting traffic - which is what an operator reading the log
+    // expects to see.
+    await connectDB()
     await bootstrap()
 }
 

@@ -122,12 +122,21 @@ with JWT authentication, AI-assisted drafting, image hosting and analytics.
 
 ### Security
 
-- `sanitize-html` updated to 2.18.1, resolving incomplete URI scheme
-  validation that allowed `javascript:` URIs through `action`, `formaction`,
-  `data`, `poster` and `background` attributes. QuickBlog's allow-list never
-  permitted those attributes, so the app was not exposed. Still pinned exactly,
-  as the previous release intended.
-- `npm audit` on the API reports no high or critical findings.
+- `sanitize-html` stays pinned at 2.17.0. 2.18.1 fixes an advisory about
+  `javascript:` URIs in `action`, `formaction`, `data`, `poster` and
+  `background` attributes, but it depends on `htmlparser2@12`, which is
+  ESM-only, while `sanitize-html` itself is CommonJS. Loading it then needs
+  Node's `require(esm)` support, which arrived in Node 22.12 and is absent
+  from Node 20 — and on a serverless runtime that throws at module load and
+  takes down every route. QuickBlog's allow-list never permits any of the
+  affected attributes, so the advisory is not reachable here. Revisit when
+  sanitize-html ships an ESM build.
+- `server/package.json` carries no `engines` field, for the same reason: a
+  range such as `>=20` lets a host resolve to Node 20.
+- Pin `quill` to 2.0.2, the version without the HTML-export XSS advisory.
+- `npm audit` on the API reports no high or critical findings. Four remain —
+  one low, three moderate — all accepted deliberately and explained in
+  CLAUDE.md.
 
 ### Notes for operators
 

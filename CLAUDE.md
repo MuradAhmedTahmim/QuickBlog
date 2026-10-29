@@ -265,11 +265,35 @@ cd client && npm run build    # vite build — must stay clean
 cd server && npm audit        # no high or critical findings expected
 ```
 
-Two moderate `npm audit` findings remain in the API, both in the
-`imagekit` → `uuid` chain. The only offered fix is a downgrade to
-`imagekit@1.5.0`, a different major version with a different API, so they are
-accepted rather than applied. Neither is reachable: the advisory needs a `buf`
-argument passed to `uuid`, which `imagekit` does not do.
+Four `npm audit` findings remain in the API — one low, three moderate, none
+high or critical. All four are accepted deliberately:
+
+- **`imagekit` → `uuid`** (two moderate). The only offered fix is
+  `imagekit@1.5.0`, a different major version with a different API. Not
+  reachable: the advisory needs a `buf` argument passed to `uuid`, which
+  `imagekit` does not do.
+- **`sanitize-html`, `deepmerge`** (one moderate, one low). Fixed in
+  `sanitize-html@2.18.1`, which cannot be used here — see below.
+
+### Do not upgrade sanitize-html past 2.17.0
+
+`sanitize-html@2.18.1` depends on `htmlparser2@12`, which is **ESM-only**,
+while `sanitize-html` itself is CommonJS. Loading it therefore needs Node's
+`require(esm)` support, which arrived in Node 22.12 and is absent from Node 20.
+On a serverless runtime that throws at module load — and because
+`utils/sanitizeContent.js` is imported by the controllers, by the routers and
+so by `app.js`, **every route returns 500**. That is exactly what happened
+during this release: the live API went down until the pin was restored. The
+commit history records the pin twice; leave it alone.
+
+QuickBlog's allow-list never permits the `action`, `formaction`, `data`,
+`poster` or `background` attributes the advisory concerns, so nothing here is
+exposed. Revisit only when sanitize-html ships an ESM build or drops its
+CommonJS entry point.
+
+For the same reason `server/package.json` carries **no `engines` field**: a
+range such as `>=20` lets the host resolve to Node 20, which reintroduces the
+problem for any CommonJS dependency that pulls in an ESM-only package.
 
 ## Things that will bite you
 

@@ -55,6 +55,8 @@ const EXCLUDED_NAMES = new Set([
     'node_modules', '.git', 'dist', 'build', '.vercel', '.vite',
     '.DS_Store', 'Thumbs.db', 'coverage', '.nyc_output', '.idea',
     'QuickBlog-submission.zip',
+    // Listing media for the marketplace form, not part of the code submission.
+    'Vibe96-Media',
 ]);
 
 const isExcluded = (name) => {

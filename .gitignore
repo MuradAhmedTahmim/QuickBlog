@@ -19,6 +19,10 @@ build
 # Submission archive, rebuilt by `npm run package:submission`
 QuickBlog-submission.zip
 
+# Listing media for the Vibe96 marketplace form. Uploaded there, not part of
+# the code submission - regenerate with scripts/capture-listing-media.mjs.
+Vibe96-Media/
+
 # Logs
 *.log
 npm-debug.log*

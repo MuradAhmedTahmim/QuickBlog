@@ -106,6 +106,8 @@ Before a production deploy:
       since it changed.
 - [ ] HTTPS on both halves. A browser blocks an HTTPS page calling an HTTP API.
 - [ ] `npm run db:schema` has been run against the target database.
+      **Required**: with `NODE_ENV=production` the API does not create indexes
+      itself, so without this the collections have none.
 - [ ] The demo account exists and its credentials in `README.md` are correct.
 - [ ] `cd server && npm test` passes.
 - [ ] `cd client && npm run build` is clean.

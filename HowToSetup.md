@@ -378,6 +378,13 @@ npm install
 npm run db:schema
 ```
 
+> **Run this before the first production start.** With `NODE_ENV=production`
+> the API deliberately does not create indexes itself (`autoIndex: false`), so
+> this script is what creates them. Mongoose names indexes its own way and this
+> script names them explicitly; letting both build the same index fails with
+> `IndexOptionsConflict`. In development and in tests the API still builds them
+> automatically, so a fresh local database needs nothing extra.
+
 Against an empty database this creates everything from nothing: the
 collections, a JSON Schema validator on each, and all the indexes. Against a
 database that already has data it updates validators and adds missing indexes

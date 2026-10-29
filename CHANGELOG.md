@@ -88,7 +88,7 @@ with JWT authentication, AI-assisted drafting, image hosting and analytics.
 - `docker-compose.yml` running the API, the client and MongoDB together, with
   a multi-stage client image served by Nginx and health checks on both
   services.
-- Automated test suite: 69 Vitest tests with supertest, against an in-memory
+- Automated test suite: 72 Vitest tests with supertest, against an in-memory
   MongoDB, covering authentication, token and role enforcement, the full
   article CRUD cycle including ownership, and the additive-only start-up
   backfill.

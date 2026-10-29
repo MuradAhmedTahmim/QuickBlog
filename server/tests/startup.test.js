@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import request from 'supertest'
 import mongoose from 'mongoose'
 import app from '../app.js'
@@ -110,6 +110,47 @@ describe('bootstrap', () => {
             .map((blog) => blog.slug)
         expect(slugs.filter(Boolean)).toHaveLength(2)
         expect(new Set(slugs).size).toBe(2)
+    })
+})
+
+describe('index creation ownership', () => {
+    // Regression guard. database/schema.js names every index explicitly and
+    // Mongoose names them its own way, so if both build the same index the
+    // second one fails with IndexOptionsConflict. On a serverless cold start
+    // that surfaces as an unhandled rejection and takes the whole function
+    // down - which is exactly what happened on the first deploy of this
+    // release. In production, schema.js owns indexes and Mongoose must not
+    // touch them.
+    const connectWith = async (nodeEnv) => {
+        const captured = {};
+        vi.resetModules()
+        vi.doMock('mongoose', () => ({
+            default: {
+                connection: {on: () => {}},
+                connect: async (uri, options) => { Object.assign(captured, options) },
+            },
+        }))
+
+        const previous = process.env.NODE_ENV;
+        process.env.NODE_ENV = nodeEnv;
+        try {
+            const connectDB = (await import('../configs/db.js')).default;
+            await connectDB();
+        } finally {
+            process.env.NODE_ENV = previous;
+            vi.doUnmock('mongoose')
+            vi.resetModules()
+        }
+        return captured;
+    }
+
+    it('leaves indexes to database/schema.js in production', async () => {
+        expect((await connectWith('production')).autoIndex).toBe(false)
+    })
+
+    it.each(['development', 'test'])('builds indexes automatically in %s', async (env) => {
+        // So a fresh local database works without running the script first.
+        expect((await connectWith(env)).autoIndex).toBe(true)
     })
 })
 

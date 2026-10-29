@@ -240,7 +240,7 @@ npm run test:watch    # vitest
 npx vitest run tests/blogs.test.js -t "slug"   # one file, one name
 ```
 
-69 tests in three files. Vitest mounts the real Express app with supertest
+72 tests in three files. Vitest mounts the real Express app with supertest
 against a **throwaway in-memory MongoDB** (`mongodb-memory-server-core`), started in
 `tests/setup.js`, which also sets test-only environment variables *before*
 anything imports the app — so the suite can never pick up a developer's live
@@ -277,6 +277,14 @@ argument passed to `uuid`, which `imagekit` does not do.
   connection and no `listen`, so tests can import it. `server.js` connects,
   bootstraps and listens. Register middleware and routes in `app.js`; put
   startup work in `server.js`.
+- **In production, Mongoose does not create indexes.** `configs/db.js` sets
+  `autoIndex: false` when `NODE_ENV === "production"`, because
+  `database/schema.js` names every index explicitly while Mongoose names them
+  its own way - and two differently named builds of the same index fail with
+  `IndexOptionsConflict`, which on a serverless cold start is an unhandled
+  rejection that kills the function. So `npm run db:schema` is required before
+  a first production start. Development and tests keep `autoIndex` on.
+  `tests/startup.test.js` guards this.
 - **`configs/bootstrap.js` runs on every start** and is **additive only**. It
   creates the admin from `.env`, then backfills fields that older documents
   lack. Never make it overwrite an existing value.

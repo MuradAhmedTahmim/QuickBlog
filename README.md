@@ -174,7 +174,7 @@ cd server
 npm test
 ```
 
-69 tests. Vitest mounts the Express app with supertest against a throwaway
+72 tests. Vitest mounts the Express app with supertest against a throwaway
 in-memory MongoDB, covering registration and login, token and role enforcement
 on every write route, the full article create–read–update–delete cycle
 including ownership, and that the start-up backfill never overwrites an

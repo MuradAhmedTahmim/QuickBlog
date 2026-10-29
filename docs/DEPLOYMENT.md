@@ -45,6 +45,20 @@ client's production URL. Omit `PORT` — Vercel assigns it.
 Vite inlines it at **build** time, so changing it requires a redeploy, not a
 restart.
 
+### The Node version comes from package.json, not the dashboard
+
+`server/vercel.json` uses the legacy `builds` key, which makes Vercel ignore
+the project's Build and Development Settings — including the **Node Version**
+shown in the dashboard. It prints a warning saying so on every build.
+
+The runtime version therefore comes from `engines.node` in
+`server/package.json`, or from the `@vercel/node` default when that is absent,
+which is how it is left. Adding a loose range such as `">=20"` lets the host
+resolve to Node 20, which has no `require(esm)` support and breaks any
+CommonJS dependency that pulls in an ESM-only package — see the sanitize-html
+warning in [CLAUDE.md](../CLAUDE.md#do-not-upgrade-sanitize-html-past-2170).
+If you need to pin it, pin an exact major and redeploy the API by itself first.
+
 ### Things to know about serverless here
 
 - **Cold starts open a new database connection.** `configs/db.js` caps the pool

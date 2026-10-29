@@ -280,20 +280,45 @@ high or critical. All four are accepted deliberately:
 `sanitize-html@2.18.1` depends on `htmlparser2@12`, which is **ESM-only**,
 while `sanitize-html` itself is CommonJS. Loading it therefore needs Node's
 `require(esm)` support, which arrived in Node 22.12 and is absent from Node 20.
-On a serverless runtime that throws at module load — and because
+Where that is unavailable it throws at module load — and because
 `utils/sanitizeContent.js` is imported by the controllers, by the routers and
-so by `app.js`, **every route returns 500**. That is exactly what happened
-during this release: the live API went down until the pin was restored. The
-commit history records the pin twice; leave it alone.
+so by `app.js`, **every route returns 500**, including the ones that touch no
+database.
+
+That is what took the live API down during this release. Vercel's retained
+logs do not include runtime errors for past deployments, so the proof is
+circumstantial rather than a stack trace: the deployment that failed and the
+one that recovered differ only in this pin and in the `engines` field below,
+every deployment in between built successfully, and the failure was total
+rather than confined to data routes. The repository already carried a commit
+named "Pin sanitize-html to the last CommonJS-compatible release" before this
+one. **Leave the pin alone.**
 
 QuickBlog's allow-list never permits the `action`, `formaction`, `data`,
 `poster` or `background` attributes the advisory concerns, so nothing here is
 exposed. Revisit only when sanitize-html ships an ESM build or drops its
 CommonJS entry point.
 
-For the same reason `server/package.json` carries **no `engines` field**: a
-range such as `>=20` lets the host resolve to Node 20, which reintroduces the
-problem for any CommonJS dependency that pulls in an ESM-only package.
+### Which Node version the API actually runs on
+
+`server/vercel.json` uses the legacy `builds` key, and Vercel says so on every
+build:
+
+```
+WARNING! Due to `builds` existing in your configuration file, the Build and
+Development Settings defined in your Project Settings will not apply.
+```
+
+So the **Node Version set in the Vercel dashboard has no effect** on this
+project. Do not reason from it. The runtime version comes from
+`engines.node` in `server/package.json` or, with that absent, from the
+`@vercel/node` default.
+
+`server/package.json` therefore carries **no `engines` field**. A range such as
+`>=20` lets the host resolve to Node 20, which is what reintroduces the
+`require(esm)` problem above for any CommonJS dependency that pulls in an
+ESM-only package. If you need to pin the runtime, pin it to an exact supported
+major (`"22.x"`, `"24.x"`) and redeploy the API on its own first.
 
 ## Things that will bite you
 

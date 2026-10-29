@@ -33,23 +33,29 @@ const Blog = () => {
     }
   }, [axios, id])
 
-  const fetchComments = useCallback(async () => {
+  const fetchComments = useCallback(async (blogId) => {
     try {
-      const { data } = await axios.get(`/api/blog/comments/${id}`)
+      const { data } = await axios.get(`/api/blog/comments/${blogId}`)
       if (data.success) setComments(data.comments)
     } catch {
       /* comments are secondary - the article still reads without them */
     }
-  }, [axios, id])
+  }, [axios])
 
   // Re-run on id so moving between related articles reloads the page content.
   useEffect(() => {
     setData(null)
     setNotFound(false)
+    setComments([])
     window.scrollTo({ top: 0 })
     fetchBlogData()
-    fetchComments()
-  }, [fetchBlogData, fetchComments])
+  }, [fetchBlogData])
+
+  // Waits for the article, because the URL may carry a slug while the comment
+  // routes work on its id.
+  useEffect(() => {
+    if (data?._id) fetchComments(data._id)
+  }, [data?._id, fetchComments])
 
   const related = useMemo(() => {
     if (!data) return []
@@ -66,7 +72,7 @@ const Blog = () => {
 
     setPosting(true)
     try {
-      const { data: result } = await axios.post('/api/blog/add-comment', { blog: id, content })
+      const { data: result } = await axios.post('/api/blog/add-comment', { blog: data._id, content })
       if (result.success) {
         toast.success(t('article.commentQueued'))
         setContent('')

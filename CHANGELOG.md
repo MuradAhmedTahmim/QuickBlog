@@ -122,6 +122,14 @@ with JWT authentication, AI-assisted drafting, image hosting and analytics.
   `VITE_BASE_URL` now defaults to `http://localhost:3000` and is documented in
   `HowToSetup.md`.
 
+### Fixed
+
+- Comments on an article opened by its slug. Articles resolve by id or by
+  slug, but the comment routes took an id only, so every article reached at
+  `/blog/<slug>` showed no comments and refused new ones. Both routes now
+  resolve either form, and the client works from the article it already
+  loaded rather than from whatever the URL happened to carry. A test pins it.
+
 ### Security
 
 - `sanitize-html` stays pinned at 2.17.0. 2.18.1 fixes an advisory about

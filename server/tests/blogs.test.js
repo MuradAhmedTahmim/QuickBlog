@@ -307,6 +307,26 @@ describe('comments', () => {
         expect((await Comment.findOne({})).name).toBe('Curious Reader')
     })
 
+    it('reads and accepts comments by slug as well as by id', async () => {
+        // Regression guard. An article is reachable at /blog/<slug>, and the
+        // client passes whatever the URL holds straight through. When these
+        // routes took an id only, every article opened by slug showed no
+        // comments and refused new ones - which is what shipped, briefly.
+        await createBlog(authorToken, {title: 'Reachable by slug'})
+        const blog = await Blog.findOne({})
+        await Comment.create({blog: blog._id, name: 'A', content: 'Approved', isApproved: true})
+
+        const bySlug = await api().get(`/api/blog/comments/${blog.slug}`)
+        expect(bySlug.body.comments).toHaveLength(1)
+
+        const posted = await api().post('/api/blog/add-comment')
+            .set('Authorization', `Bearer ${readerToken}`)
+            .send({blog: blog.slug, content: 'Left on an article opened by slug.'})
+
+        expect(posted.body.success).toBe(true)
+        expect(await Comment.countDocuments({blog: blog._id})).toBe(2)
+    })
+
     it('shows approved comments publicly and withholds pending ones', async () => {
         await createBlog(authorToken)
         const blog = await Blog.findOne({})

@@ -281,14 +281,18 @@ export const togglePublish = async (req, res) =>{
 
 export const addComment = async (req, res) =>{
     try {
-        const {blog, content } = req.body;
+        const {content } = req.body;
+
+        // Accepts the article's id or its slug, for the same reason reading
+        // comments does.
+        const blog = await resolveBlogId(req.body.blog);
 
         // The display name comes from the signed-in account, so a commenter can
         // no longer post under someone else's name.
         const cleanName = sanitizeText(req.user.name || '');
         const cleanContent = sanitizeText(content || '');
 
-        if(!mongoose.isValidObjectId(blog)){
+        if(!blog){
             return res.json({success: false, message: 'Blog not found'})
         }
         if(cleanName.length < 2 || cleanName.length > 60){
@@ -308,10 +312,20 @@ export const addComment = async (req, res) =>{
     }
 }
 
+// An article is reachable by id or by slug, and whatever is in the URL is what
+// a caller tends to pass on. Resolving both here means a page opened at
+// /blog/<slug> is not left without its comments.
+const resolveBlogId = async (identifier) => {
+    if(mongoose.isValidObjectId(identifier)) return identifier;
+    if(!identifier) return null;
+    const blog = await Blog.findOne({slug: String(identifier).toLowerCase()}).select('_id');
+    return blog?._id || null;
+}
+
 export const getBlogComments = async (req, res) =>{
     try {
-        const blogId = req.params.blogId || req.body.blogId;
-        if(!mongoose.isValidObjectId(blogId)){
+        const blogId = await resolveBlogId(req.params.blogId || req.body.blogId);
+        if(!blogId){
             return res.json({success: true, comments: []})
         }
         const comments = await Comment.find({blog: blogId, isApproved: true}).sort({createdAt: -1});

@@ -1,13 +1,13 @@
 import fs from "fs";
 import bcrypt from "bcryptjs";
-import jwt from "jsonwebtoken";
 import User from "../models/User.js";
 import Blog from "../models/Blog.js";
 import imagekit from "../configs/imageKit.js";
 import { sanitizeText } from "../utils/sanitizeContent.js";
+import { signToken } from "../configs/tokens.js";
 
-const issueToken = (user) =>
-    jwt.sign({id: user._id, role: user.role}, process.env.JWT_SECRET, {expiresIn: '30d'})
+// Lifetime comes from JWT_EXPIRES_IN, so it is configurable per deployment.
+const issueToken = (user) => signToken({id: user._id, role: user.role})
 
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 

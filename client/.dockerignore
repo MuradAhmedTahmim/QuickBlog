@@ -1,0 +1,12 @@
+node_modules
+dist
+npm-debug.log*
+*.log
+
+# Never bake secrets into an image.
+.env
+.env.*
+
+.vercel
+Dockerfile
+.dockerignore

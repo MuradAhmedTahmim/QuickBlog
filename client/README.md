@@ -1,12 +1,59 @@
-# React + Vite
+# QuickBlog — React client
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+The reader experience and the CMS, as a React + Vite single-page app. This is
+one half of QuickBlog; the other is the Express API alongside it.
 
-Currently, two official plugins are available:
+**Start with the project root:** [README.md](../README.md) for the product,
+[HowToSetup.md](../HowToSetup.md) to install it, and
+[CLAUDE.md](../CLAUDE.md) for the architecture and the conventions.
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+## Commands
 
-## Expanding the ESLint configuration
+```bash
+npm install
+npm run dev       # http://localhost:5173
+npm run build     # production bundle into dist/
+npm run preview   # serve the built bundle
+npm run lint      # eslint
+```
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+## Configuration
+
+One variable, and no example file — the API's `.env.example` is the project's
+single example config.
+
+| Variable | Default | What it is |
+|---|---|---|
+| `VITE_BASE_URL` | `http://localhost:3000` | The URL of the Express API |
+
+Locally the default is already correct, so you need no `.env` at all. Set it
+when the API lives elsewhere, either in `.env` here or as a build environment
+variable on your host. **Vite inlines it at build time**, so changing it means
+rebuilding, not restarting. Details in
+[HowToSetup.md](../HowToSetup.md#client-configuration).
+
+## Layout
+
+```
+src/
+  components/             shared UI; admin/ for the dashboard pieces
+  pages/                  route components; admin/ for the CMS screens
+  context/AppContext.jsx  all app state: session, theme, language, blogs, engagement
+  i18n/                   translate() and the en/bn dictionaries
+  utils/format.js         number and name formatting
+  assets/assets.js        re-exports every image and the category list
+  index.css               every colour, as CSS custom properties
+nginx.conf                serves the built bundle in the Docker image
+```
+
+## Two things to know before editing
+
+- **Interface copy never goes in a component.** Every string is `t('some.key')`
+  and must exist in **both** dictionaries in `src/i18n/translations.js`.
+  Numbers go through `n(value)`, which renders Bengali numerals when the
+  language is Bengali.
+- **Colours are CSS custom properties** from `src/index.css`. Use the Tailwind
+  aliases — `text-ink`, `bg-surface`, `border-line`, `text-muted`,
+  `bg-tealsolid` — never a hex value.
+
+The full set of conventions is in [CLAUDE.md](../CLAUDE.md#conventions).

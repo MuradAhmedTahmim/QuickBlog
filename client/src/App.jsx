@@ -21,14 +21,15 @@ const Comments = lazy(() => import('./pages/admin/Comments'))
 const Login = lazy(() => import('./components/admin/Login'))
 
 // The admin area is only a convenience gate - every admin API route is
-// independently guarded on the server.
+// independently guarded on the server. Admins and authors both get in; the
+// API decides what each of them is allowed to see and change.
 const AdminArea = () => {
-  const { token, user } = useAppContext()
+  const { token, user, canWrite } = useAppContext()
 
   if (!token) return <Login />
   // Wait for the session before deciding, so a reload does not bounce the admin out.
   if (!user) return <Loader label="Checking your session" />
-  if (user.role !== 'admin') return <Login />
+  if (!canWrite) return <Login />
 
   return <Layout />
 }

@@ -55,6 +55,10 @@ const Dashboard = () => {
       <header>
         <h1 className="text-xl font-semibold tracking-tight text-ink">{t('admin.dashTitle')}</h1>
         <p className="mt-1 text-sm text-muted">{t('admin.dashSubtitle')}</p>
+        {/* An author sees only their own numbers, so say which it is. */}
+        <p className="mt-0.5 text-xs text-muted/80">
+          {t(data.scope === 'author' ? 'admin.scopeAuthor' : 'admin.scopeSite')}
+        </p>
       </header>
 
       {!hasAnything ? (
@@ -187,10 +191,13 @@ const Dashboard = () => {
                 </ul>
               )}
 
-              <div className="mt-5 pt-4 border-t border-line flex items-center gap-2 text-xs text-muted">
-                <MailIcon className="w-4 h-4" />
-                {t(data.subscribers === 1 ? 'admin.subscribersOne' : 'admin.subscribers', { n: data.subscribers })}
-              </div>
+              {/* The newsletter list is site-wide, so only an admin sees it. */}
+              {data.scope !== 'author' && (
+                <div className="mt-5 pt-4 border-t border-line flex items-center gap-2 text-xs text-muted">
+                  <MailIcon className="w-4 h-4" />
+                  {t(data.subscribers === 1 ? 'admin.subscribersOne' : 'admin.subscribers', { n: data.subscribers })}
+                </div>
+              )}
             </section>
           </div>
         </>

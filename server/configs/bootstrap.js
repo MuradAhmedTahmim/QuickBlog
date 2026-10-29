@@ -3,6 +3,7 @@ import Blog from "../models/Blog.js";
 import Comment from "../models/Comment.js";
 import User from "../models/User.js";
 import readingTime from "../utils/readingTime.js";
+import { uniqueSlug } from "../utils/slug.js";
 
 // Keeps a User document in step with the admin credentials in .env, so the
 // admin can own blogs and have an author profile like anyone else.
@@ -65,11 +66,44 @@ const backfillBlogs = async (admin) => {
     return pending.length;
 }
 
+// Articles written before bilingual filtering existed are shown in both
+// languages, so switching language can never hide something that used to be
+// visible. Only documents missing the field are touched.
+const backfillLanguage = async () => {
+    const result = await Blog.updateMany(
+        {$or: [{contentLanguage: {$exists: false}}, {contentLanguage: null}]},
+        {$set: {contentLanguage: 'both'}}
+    )
+    return result.modifiedCount || 0;
+}
+
+// Gives older articles the readable slug new ones get on save. One at a time,
+// because each slug has to be checked against the ones already taken.
+const backfillSlugs = async () => {
+    const pending = await Blog.find({
+        $or: [{slug: {$exists: false}}, {slug: null}, {slug: ''}],
+    }).select('title');
+
+    for (const blog of pending){
+        const slug = await uniqueSlug(blog.title, async (candidate) =>
+            Boolean(await Blog.exists({slug: candidate, _id: {$ne: blog._id}}))
+        )
+        await Blog.updateOne({_id: blog._id}, {$set: {slug}});
+    }
+
+    return pending.length;
+}
+
 const bootstrap = async () => {
     try {
         const admin = await ensureAdminUser();
         const updated = await backfillBlogs(admin);
-        console.log(`Bootstrap complete (admin ready, ${updated} blog(s) backfilled)`)
+        const languages = await backfillLanguage();
+        const slugs = await backfillSlugs();
+        console.log(
+            `Bootstrap complete (admin ready, ${updated} blog(s) backfilled, ` +
+            `${languages} language default(s), ${slugs} slug(s) generated)`
+        )
     } catch (error) {
         console.log('Bootstrap failed:', error.message)
     }

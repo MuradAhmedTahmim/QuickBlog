@@ -1,0 +1,19 @@
+{
+  "name": "quickblog",
+  "version": "1.0.0",
+  "private": true,
+  "description": "QuickBlog - bilingual blogging platform. Root project: database scripts and submission tooling.",
+  "type": "module",
+  "license": "SEE LICENSE-NOTE.md",
+  "scripts": {
+    "db:schema": "node database/schema.js",
+    "db:seed": "node database/seed.js",
+    "db:seed:reset": "node database/seed.js --reset",
+    "package:submission": "node scripts/package-submission.mjs"
+  },
+  "dependencies": {
+    "bcryptjs": "^3.0.3",
+    "dotenv": "^16.5.0",
+    "mongodb": "^6.10.0"
+  }
+}

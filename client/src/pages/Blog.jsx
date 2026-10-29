@@ -16,12 +16,11 @@ import { compactNumber, initials } from '../utils/format'
 
 const Blog = () => {
   const { id } = useParams()
-  const { axios, blogs, t, n } = useAppContext()
+  const { axios, blogs, user, requireAuth, t, n } = useAppContext()
 
   const [data, setData] = useState(null)
   const [notFound, setNotFound] = useState(false)
   const [comments, setComments] = useState([])
-  const [name, setName] = useState('')
   const [content, setContent] = useState('')
   const [posting, setPosting] = useState(false)
 
@@ -36,7 +35,7 @@ const Blog = () => {
 
   const fetchComments = useCallback(async () => {
     try {
-      const { data } = await axios.post('/api/blog/comments', { blogId: id })
+      const { data } = await axios.get(`/api/blog/comments/${id}`)
       if (data.success) setComments(data.comments)
     } catch {
       /* comments are secondary - the article still reads without them */
@@ -61,12 +60,15 @@ const Blog = () => {
 
   const addComment = async (event) => {
     event.preventDefault()
+    // Comments are signed, so an anonymous reader gets the sign-in prompt
+    // first. Their draft is still in the box when they come back.
+    if (!requireAuth()) return
+
     setPosting(true)
     try {
-      const { data: result } = await axios.post('/api/blog/add-comment', { blog: id, name, content })
+      const { data: result } = await axios.post('/api/blog/add-comment', { blog: id, content })
       if (result.success) {
         toast.success(t('article.commentQueued'))
-        setName('')
         setContent('')
       } else {
         toast.error(result.message)
@@ -212,13 +214,12 @@ const Blog = () => {
             <p className="mt-1 text-xs text-muted">{t('article.moderationNote')}</p>
 
             <div className="mt-4 flex flex-col gap-3.5">
-              <div>
-                <label htmlFor="comment-name" className="block text-xs font-medium text-muted mb-1.5">{t('common.name')}</label>
-                <input
-                  id="comment-name" value={name} onChange={(event) => setName(event.target.value)}
-                  required minLength={2} maxLength={60} className={field} placeholder={t('auth.namePlaceholder')}
-                />
-              </div>
+              {/* The name is taken from the account, so it is shown, not typed. */}
+              <p className="text-xs text-muted">
+                {user
+                  ? t('article.commentingAs', { name: user.name })
+                  : t('article.commentSignInNote')}
+              </p>
 
               <div>
                 <label htmlFor="comment-body" className="block text-xs font-medium text-muted mb-1.5">{t('article.commentLabel')}</label>
@@ -233,7 +234,7 @@ const Blog = () => {
                 type="submit" disabled={posting}
                 className="self-start px-5 py-2.5 rounded-full bg-tealsolid text-onteal text-sm font-medium hover:opacity-90 disabled:opacity-60 transition-opacity cursor-pointer"
               >
-                {posting ? t('article.posting') : t('article.post')}
+                {posting ? t('article.posting') : user ? t('article.post') : t('article.signInToPost')}
               </button>
             </div>
           </form>

@@ -1,20 +1,31 @@
 node_modules
 
-# Secrets - never commit these. Both .env files hold environment specific
-# values; the server one holds the database URI and every API key.
+# Secrets - never commit these. The server .env holds the database URI, the JWT
+# secret, the admin password and every API key. server/.env.example is the one
+# tracked example config, and every value in it is a placeholder.
 .env
 .env.*
 !.env.example
 server/.env
 client/.env
 
+# Deployment platform state (project and org ids)
+.vercel
+
 # Build output
 dist
 build
 
+# Submission archive, rebuilt by `npm run package:submission`
+QuickBlog-submission.zip
+
 # Logs
 *.log
 npm-debug.log*
+
+# Test and tooling output
+coverage
+.nyc_output
 
 # Editor / OS
 .vscode/*

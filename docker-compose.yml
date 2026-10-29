@@ -1,0 +1,90 @@
+# QuickBlog - API, client and MongoDB
+#
+#   cp server/.env.example server/.env   # then fill it in, see HowToSetup.md
+#   docker compose up -d --build
+#
+#   client            http://localhost:8080
+#   API               http://localhost:3000
+#   API health        http://localhost:3000/health
+#
+# For MONGODB_URI in server/.env use the service name below:
+#   MONGODB_URI = mongodb://mongo:27017
+#
+# Article data lives in the named volume and survives `docker compose down`.
+# Only `docker compose down -v` deletes it.
+
+services:
+  mongo:
+    image: mongo:7
+    container_name: quickblog-mongo
+    restart: unless-stopped
+    volumes:
+      - mongo-data:/data/db
+    ports:
+      # Published so `npm run db:schema` and `npm run db:seed` can be run from
+      # the host. Remove this block to keep MongoDB on the internal network.
+      - "27017:27017"
+    healthcheck:
+      test: ["CMD", "mongosh", "--quiet", "--eval", "db.adminCommand('ping').ok"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 20s
+    networks:
+      - quickblog
+
+  api:
+    build:
+      context: ./server
+      dockerfile: Dockerfile
+    container_name: quickblog-api
+    restart: unless-stopped
+    # Every secret comes from this file at run time; none is baked into the
+    # image. It is git-ignored - copy .env.example to create it.
+    env_file:
+      - ./server/.env
+    environment:
+      # Overrides whatever the .env says, so the API always finds the database
+      # container rather than a localhost that does not exist in here.
+      MONGODB_URI: mongodb://mongo:27017
+      PORT: 3000
+      NODE_ENV: production
+    ports:
+      - "3000:3000"
+    volumes:
+      # Mounted inside the app directory so the scripts resolve mongodb, dotenv
+      # and bcryptjs from the API's own node_modules. Read-only, so the
+      # container cannot rewrite them:
+      #   docker compose exec api node database/schema.js
+      #   docker compose exec api node database/seed.js
+      - ./database:/app/database:ro
+    depends_on:
+      mongo:
+        condition: service_healthy
+    networks:
+      - quickblog
+
+  client:
+    build:
+      context: ./client
+      dockerfile: Dockerfile
+      args:
+        # Where the browser reaches the API. This is inlined into the bundle at
+        # build time, so it is the host's address, not the container's.
+        VITE_BASE_URL: ${VITE_BASE_URL:-http://localhost:3000}
+    container_name: quickblog-client
+    restart: unless-stopped
+    ports:
+      - "8080:80"
+    depends_on:
+      - api
+    networks:
+      - quickblog
+
+volumes:
+  mongo-data:
+    name: quickblog-mongo-data
+
+networks:
+  quickblog:
+    name: quickblog

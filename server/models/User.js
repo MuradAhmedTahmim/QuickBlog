@@ -4,7 +4,9 @@ const userSchema = new mongoose.Schema({
     name: {type: String, required: true, trim: true, maxlength: 60},
     email: {type: String, required: true, unique: true, lowercase: true, trim: true},
     password: {type: String, required: true, select: false},
-    role: {type: String, enum: ['user', 'admin'], default: 'user'},
+    // reader -> 'user'; writes and publishes their own posts -> 'author';
+    // full CMS and moderation -> 'admin'. New accounts stay readers.
+    role: {type: String, enum: ['user', 'author', 'admin'], default: 'user'},
     bio: {type: String, default: '', maxlength: 400},
     image: {type: String, default: ''},
 },{timestamps: true});

@@ -10,6 +10,15 @@ const blogSchema = new mongoose.Schema({
     isPublished: {type: Boolean, required: true},
     author: {type: mongoose.Schema.Types.ObjectId, ref: 'User'},
 
+    // Readable identifier derived from the title. Articles are still fetched by
+    // _id, so this is additive: nothing breaks on a post that has none yet.
+    slug: {type: String, trim: true, lowercase: true},
+
+    // Which interface language this article is written for. 'both' means show
+    // it whichever language the reader has chosen, and is what every article
+    // written before bilingual filtering existed is treated as.
+    contentLanguage: {type: String, enum: ['en', 'bn', 'both'], default: 'both'},
+
     // Engagement counters kept alongside the Like/View collections so listing and
     // trending queries never have to join across them.
     views: {type: Number, default: 0},
@@ -30,8 +39,16 @@ blogSchema.pre('save', function(next){
 
 blogSchema.index({isPublished: 1, createdAt: -1});
 blogSchema.index({isPublished: 1, category: 1});
+blogSchema.index({isPublished: 1, contentLanguage: 1, createdAt: -1});
+// Required index: post author and status.
 blogSchema.index({author: 1, isPublished: 1});
 blogSchema.index({title: 'text', subTitle: 'text'});
+// Required index: unique post slug. Partial, so posts predating the field do
+// not all collide on a missing value.
+blogSchema.index(
+    {slug: 1},
+    {unique: true, partialFilterExpression: {slug: {$type: 'string'}}}
+);
 
 const Blog = mongoose.model('blog', blogSchema);
 

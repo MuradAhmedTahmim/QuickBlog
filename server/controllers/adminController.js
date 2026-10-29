@@ -1,5 +1,5 @@
 import bcrypt from 'bcryptjs'
-import jwt from 'jsonwebtoken'
+import { signToken } from '../configs/tokens.js'
 import Blog from '../models/Blog.js';
 import Comment from '../models/Comment.js';
 import User from '../models/User.js';
@@ -16,14 +16,19 @@ export const adminLogin = async (req, res)=>{
 
         // The .env pair stays the admin credential, exactly as before.
         if(String(email).trim() !== envEmail || String(password) !== envPassword){
-            // An admin account created through the normal signup flow can sign in too.
-            const user = await User.findOne({email: String(email).trim().toLowerCase(), role: 'admin'}).select('+password');
+            // An admin or author account created through the normal signup flow
+            // can sign in here too; an author only ever sees their own work.
+            const user = await User.findOne({
+                email: String(email).trim().toLowerCase(),
+                role: {$in: ['admin', 'author']},
+            }).select('+password');
+
             if(!user || !(await bcrypt.compare(String(password), user.password))){
                 return res.json({success: false, message: "Invalid Credentials"})
             }
             return res.json({
                 success: true,
-                token: jwt.sign({id: user._id, role: 'admin'}, process.env.JWT_SECRET, {expiresIn: '30d'}),
+                token: signToken({id: user._id, role: user.role}),
                 user: user.toPrivateProfile(),
             })
         }
@@ -33,16 +38,21 @@ export const adminLogin = async (req, res)=>{
             return res.json({success: false, message: "Admin account is not ready yet, please restart the server"})
         }
 
-        const token = jwt.sign({id: admin._id, role: 'admin'}, process.env.JWT_SECRET, {expiresIn: '30d'})
+        const token = signToken({id: admin._id, role: 'admin'})
         res.json({success: true, token, user: admin.toPrivateProfile()})
     } catch (error) {
         res.json({success: false, message: error.message})
     }
 }
 
+// An admin manages the whole library; an author only their own articles.
+const scopeToCaller = (user) => (user.role === 'admin' ? {} : {author: user._id});
+
 export const getAllBlogsAdmin = async (req, res) =>{
     try {
-        const blogs = await Blog.find({}).sort({createdAt: -1}).populate('author', 'name image');
+        const blogs = await Blog.find(scopeToCaller(req.user))
+            .sort({createdAt: -1})
+            .populate('author', 'name image');
         res.json({success: true, blogs})
     } catch (error) {
         res.json({success: false, message: error.message})
@@ -71,9 +81,9 @@ const DAYS = 14;
 // Counts documents per day for the last two weeks, filling in the quiet days.
 // Everything here stays in UTC, because that is what $dateToString groups by -
 // mixing in a local midnight would push today's activity out of the window.
-const dailySeries = async (Model, dateField, since) => {
+const dailySeries = async (Model, dateField, since, extraMatch = {}) => {
     const rows = await Model.aggregate([
-        {$match: {[dateField]: {$gte: since}}},
+        {$match: {[dateField]: {$gte: since}, ...extraMatch}},
         {$group: {
             _id: {$dateToString: {format: '%Y-%m-%d', date: `$${dateField}`}},
             count: {$sum: 1},
@@ -96,22 +106,35 @@ export const getDashboard = async (req, res) =>{
         since.setUTCHours(0, 0, 0, 0);
         since.setUTCDate(since.getUTCDate() - (DAYS - 1));
 
+        // An author's dashboard covers their own articles only, so every count,
+        // ranking and series below is restricted to that set of blog ids.
+        const blogScope = scopeToCaller(req.user);
+        const isAdmin = req.user.role === 'admin';
+
+        const ownBlogIds = isAdmin
+            ? null
+            : (await Blog.find(blogScope).select('_id')).map((blog) => blog._id);
+
+        const engagementScope = isAdmin ? {} : {blog: {$in: ownBlogIds}};
+
         const [
             blogs, drafts, published, comments, pendingComments,
             likes, subscribers, recentBlogs, totals,
             topViewed, topEngaged, recentComments, viewSeries, likeSeries, commentSeries,
         ] = await Promise.all([
-            Blog.countDocuments(),
-            Blog.countDocuments({isPublished: false}),
-            Blog.countDocuments({isPublished: true}),
-            Comment.countDocuments(),
-            Comment.countDocuments({isApproved: false}),
-            Like.countDocuments(),
-            Subscriber.countDocuments(),
-            Blog.find({}).sort({createdAt: -1}).limit(5),
+            Blog.countDocuments(blogScope),
+            Blog.countDocuments({...blogScope, isPublished: false}),
+            Blog.countDocuments({...blogScope, isPublished: true}),
+            Comment.countDocuments(engagementScope),
+            Comment.countDocuments({...engagementScope, isApproved: false}),
+            Like.countDocuments(engagementScope),
+            // The newsletter list is site-wide, so it is an admin number only.
+            isAdmin ? Subscriber.countDocuments() : 0,
+            Blog.find(blogScope).sort({createdAt: -1}).limit(5),
 
             // Total and unique views live on the blogs, so one pass sums both.
             Blog.aggregate([
+                {$match: blogScope},
                 {$group: {
                     _id: null,
                     views: {$sum: {$ifNull: ['$views', 0]}},
@@ -119,11 +142,11 @@ export const getDashboard = async (req, res) =>{
                 }},
             ]),
 
-            Blog.find({isPublished: true}).sort({views: -1, createdAt: -1}).limit(5)
+            Blog.find({...blogScope, isPublished: true}).sort({views: -1, createdAt: -1}).limit(5)
                 .select('title views uniqueViews likesCount commentsCount createdAt'),
 
             Blog.aggregate([
-                {$match: {isPublished: true}},
+                {$match: {...blogScope, isPublished: true}},
                 {$addFields: {engagement: {$add: [
                     {$multiply: [{$ifNull: ['$likesCount', 0]}, 3]},
                     {$multiply: [{$ifNull: ['$commentsCount', 0]}, 4]},
@@ -134,14 +157,18 @@ export const getDashboard = async (req, res) =>{
                 {$project: {title: 1, views: 1, likesCount: 1, commentsCount: 1, engagement: 1}},
             ]),
 
-            Comment.find({}).sort({createdAt: -1}).limit(6).populate('blog', 'title'),
+            Comment.find(engagementScope).sort({createdAt: -1}).limit(6).populate('blog', 'title'),
 
-            dailySeries(View, 'createdAt', since),
-            dailySeries(Like, 'createdAt', since),
-            dailySeries(Comment, 'createdAt', since),
+            dailySeries(View, 'createdAt', since, engagementScope),
+            dailySeries(Like, 'createdAt', since, engagementScope),
+            dailySeries(Comment, 'createdAt', since, engagementScope),
         ])
 
         const dashboardData = {
+            // Tells the client whether these numbers cover the whole site or
+            // just the signed-in author's own articles.
+            scope: isAdmin ? 'site' : 'author',
+
             // Kept for the existing cards.
             blogs, comments, drafts, recentBlogs,
 

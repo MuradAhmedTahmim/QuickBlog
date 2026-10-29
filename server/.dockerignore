@@ -1,0 +1,15 @@
+node_modules
+npm-debug.log*
+*.log
+
+# Never bake secrets into an image. The container gets them from env_file.
+.env
+.env.*
+!.env.example
+
+# Not needed at runtime
+tests
+vitest.config.js
+.vercel
+Dockerfile
+.dockerignore

@@ -4,7 +4,10 @@ import { useNavigate } from 'react-router-dom'
 import toast from 'react-hot-toast';
 import { DEFAULT_LANGUAGE, LANGUAGES, applyLanguage, localizeDigits, translate } from '../i18n'
 
-axios.defaults.baseURL = import.meta.env.VITE_BASE_URL;
+// VITE_BASE_URL points at the Express API. The client ships no example env
+// file (the API's .env.example is the project's single one), so an unset value
+// falls back to the port the API listens on locally - see HowToSetup.md.
+axios.defaults.baseURL = import.meta.env.VITE_BASE_URL || 'http://localhost:3000';
 
 const AppContext = createContext();
 
@@ -75,6 +78,9 @@ export const AppProvider = ({ children })=>{
     const [language, setLanguageState] = useState(readLanguage)
 
     const isAdmin = user?.role === 'admin'
+    // Admins and authors both reach the CMS; the API scopes an author to their
+    // own articles, so the client only has to decide what to show.
+    const canWrite = isAdmin || user?.role === 'author'
 
     /* ------------------------------- theme ------------------------------- */
 
@@ -185,10 +191,25 @@ export const AppProvider = ({ children })=>{
 
     /* ------------------------------- blogs ------------------------------- */
 
-    const fetchBlogs = useCallback(async ()=>{
+    // Articles are fetched for the language the interface is in. A post marked
+    // for both languages always comes back; one written only in the other
+    // language does not. If that leaves nothing to read, we ask again without
+    // the filter rather than showing an empty site.
+    const fetchBlogs = useCallback(async (lang = readLanguage())=>{
         try {
-           const {data} = await axios.get('/api/blog/all');
-           data.success ? setBlogs(data.blogs) : toast.error(data.message)
+           const {data} = await axios.get('/api/blog/all', {params: {lang}});
+           if(!data.success){
+               toast.error(data.message)
+               return
+           }
+
+           if(data.blogs.length === 0){
+               const {data: all} = await axios.get('/api/blog/all');
+               setBlogs(all.success ? all.blogs : [])
+               return
+           }
+
+           setBlogs(data.blogs)
         } catch {
             toast.error(translate(readLanguage(), 'errors.blogsFailed'))
         } finally {
@@ -252,9 +273,10 @@ export const AppProvider = ({ children })=>{
 
     /* ------------------------------ startup ------------------------------ */
 
+    // Re-runs when the reader switches language, so the article list follows.
     useEffect(()=>{
-        fetchBlogs();
-    },[fetchBlogs])
+        fetchBlogs(language);
+    },[fetchBlogs, language])
 
     useEffect(() => {
         if(token) loadSession();
@@ -262,14 +284,14 @@ export const AppProvider = ({ children })=>{
 
     const value = useMemo(() => ({
         axios, navigate,
-        token, setToken: applyToken, user, setUser, isAdmin, logout, authenticate, loadSession,
+        token, setToken: applyToken, user, setUser, isAdmin, canWrite, logout, authenticate, loadSession,
         blogs, setBlogs, blogsLoading, fetchBlogs,
         input, setInput,
         theme, toggleTheme,
         language, setLanguage, toggleLanguage, t, n,
         likedBlogs, bookmarkedBlogs, toggleLike, toggleBookmark, requireAuth,
         authOpen, setAuthOpen,
-    }), [navigate, token, applyToken, user, isAdmin, logout, authenticate, loadSession,
+    }), [navigate, token, applyToken, user, isAdmin, canWrite, logout, authenticate, loadSession,
          blogs, blogsLoading, fetchBlogs, input, theme, toggleTheme,
          language, setLanguage, toggleLanguage, t, n,
          likedBlogs, bookmarkedBlogs, toggleLike, toggleBookmark, requireAuth, authOpen])

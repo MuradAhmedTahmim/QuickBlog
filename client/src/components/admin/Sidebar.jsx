@@ -6,16 +6,18 @@ const links = [
   { to: '/admin', end: true, labelKey: 'admin.navDashboard', icon: ChartIcon },
   { to: '/admin/addBlog', labelKey: 'admin.navAdd', icon: PlusIcon },
   { to: '/admin/listBlog', labelKey: 'admin.navList', icon: ListIcon },
-  { to: '/admin/comments', labelKey: 'admin.navComments', icon: CommentIcon },
+  // Moderation is admin-only on the server, so authors never see the link.
+  { to: '/admin/comments', labelKey: 'admin.navComments', icon: CommentIcon, adminOnly: true },
 ]
 
 const Sidebar = () => {
-  const { t } = useAppContext()
+  const { t, isAdmin } = useAppContext()
+  const visible = links.filter((link) => !link.adminOnly || isAdmin)
 
   return (
     <nav aria-label={t('admin.sections')} className="border-r border-line bg-surface shrink-0">
       <ul className="pt-4 md:w-60">
-        {links.map(({ to, end, labelKey, icon: Icon }) => (
+        {visible.map(({ to, end, labelKey, icon: Icon }) => (
           <li key={to}>
             <NavLink
               to={to} end={end}

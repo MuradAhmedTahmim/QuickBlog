@@ -1,0 +1,10 @@
+# Keeps the deployed serverless function small: none of this runs in production.
+tests
+vitest.config.js
+Dockerfile
+.dockerignore
+
+# Secrets come from the Vercel project's environment variables, never a file.
+.env
+.env.*
+!.env.example

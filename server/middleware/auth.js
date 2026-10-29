@@ -54,6 +54,26 @@ export const authRequired = async (req, res, next) => {
     }
 }
 
+// Requires a signed-in user whose role is one of `roles`. Used by the CMS and
+// publishing routes, which admins and authors may both reach while a plain
+// reader may not. Ownership, where it matters, is still checked per document in
+// the controller - this only gates the route.
+export const requireRole = (...roles) => async (req, res, next) => {
+    try {
+        const user = await resolveUser(req);
+        if(!user){
+            return res.status(401).json({success: false, message: "Please sign in to continue"})
+        }
+        if(!roles.includes(user.role)){
+            return res.status(403).json({success: false, message: "You do not have access to this action"})
+        }
+        req.user = user;
+        next();
+    } catch (error) {
+        res.status(403).json({success: false, message: "You do not have access to this action"})
+    }
+}
+
 export const adminOnly = async (req, res, next) => {
     try {
         const user = await resolveUser(req);

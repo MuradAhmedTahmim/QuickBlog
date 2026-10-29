@@ -34,6 +34,8 @@ const AddBlog = () => {
     const [subTitle, setSubTitle] = useState('');
     const [category, setCategory] = useState('Startup');
     const [isPublished, setIsPublished] = useState(false);
+    // Which reader this article is for. 'both' shows it in either language.
+    const [contentLanguage, setContentLanguage] = useState('both');
     const [initialContent, setInitialContent] = useState('');
 
     useEffect(() => {
@@ -73,6 +75,7 @@ const AddBlog = () => {
             setSubTitle(data.blog.subTitle || '')
             setCategory(data.blog.category)
             setIsPublished(data.blog.isPublished)
+            setContentLanguage(data.blog.contentLanguage || 'both')
             setCurrentImage(data.blog.image)
             setInitialContent(data.blog.description)
             setLoadingBlog(false)
@@ -125,7 +128,7 @@ const AddBlog = () => {
         try {
             setIsAdding(true)
 
-            const blog = { title, subTitle, description, category, isPublished }
+            const blog = { title, subTitle, description, category, isPublished, contentLanguage }
             if (isEdit) blog.id = id
 
             const formData = new FormData();
@@ -144,6 +147,7 @@ const AddBlog = () => {
                     setSubTitle('')
                     quillRef.current.root.innerHTML = ''
                     setCategory('Startup')
+                    setContentLanguage('both')
                     setIsPublished(false)
                 }
             } else {
@@ -253,6 +257,19 @@ const AddBlog = () => {
                             className={`${field} w-auto pr-8`}
                         >
                             {CATEGORIES.map((item) => <option key={item} value={item}>{t(`categories.${item}`)}</option>)}
+                        </select>
+                    </div>
+
+                    <div>
+                        <label htmlFor="blog-language" className="block text-xs font-medium text-muted mb-1.5">{t('admin.language')}</label>
+                        <select
+                            id="blog-language" value={contentLanguage}
+                            onChange={(event) => setContentLanguage(event.target.value)}
+                            className={`${field} w-auto pr-8`}
+                        >
+                            <option value="both">{t('admin.langBoth')}</option>
+                            <option value="en">{t('admin.langEn')}</option>
+                            <option value="bn">{t('admin.langBn')}</option>
                         </select>
                     </div>
 

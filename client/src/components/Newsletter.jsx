@@ -5,13 +5,17 @@ import { MailIcon } from './Icons'
 
 // Now backed by a real endpoint - the address is stored, not thrown away.
 const Newsletter = () => {
-  const { axios, t } = useAppContext()
+  const { axios, user, requireAuth, t } = useAppContext()
   const [email, setEmail] = useState('')
   const [busy, setBusy] = useState(false)
   const [done, setDone] = useState(false)
 
   const submit = async (event) => {
     event.preventDefault()
+    // Subscribing writes to the database, so it goes through the same
+    // sign-in prompt as liking and saving.
+    if (!requireAuth()) return
+
     setBusy(true)
     try {
       const { data } = await axios.post('/api/blog/subscribe', { email })
@@ -60,7 +64,7 @@ const Newsletter = () => {
               type="submit" disabled={busy}
               className="px-6 py-3 rounded-full bg-tealsolid text-onteal text-sm font-medium hover:opacity-90 disabled:opacity-60 transition-opacity cursor-pointer whitespace-nowrap"
             >
-              {busy ? t('newsletter.subscribing') : t('newsletter.subscribe')}
+              {busy ? t('newsletter.subscribing') : user ? t('newsletter.subscribe') : t('newsletter.signInToSubscribe')}
             </button>
           </form>
         )}

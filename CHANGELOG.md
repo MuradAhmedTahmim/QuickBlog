@@ -96,6 +96,8 @@ with JWT authentication, AI-assisted drafting, image hosting and analytics.
   `LICENSE-NOTE.md`, and `docs/` with an API reference, role matrix, data model
   and deployment notes.
 - `scripts/package-submission.mjs` builds the submission archive.
+- Full-page screenshots of the live deployment in `docs/screenshots/`, linked
+  from README.md.
 - `GET /health` endpoint for load balancer and container health checks.
 
 ### Changed

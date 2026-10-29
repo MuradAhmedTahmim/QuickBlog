@@ -89,20 +89,59 @@ If you are setting this up yourself, the demo password comes from
 
 ## Screenshots
 
-Screenshots are not committed to this archive, to keep it small. The live demo
-above is the fastest way to see the product; these are the five screens worth
-looking at:
+Full-page captures of the live deployment, signed in as the demo account.
+They are in [docs/screenshots/](docs/screenshots/).
 
-| Screen | Path on the live URL | What it shows |
-|---|---|---|
-| Home | `/` | Featured post, category filter, search, trending, language toggle |
-| Article | `/blog/<slug>` | Reading view, reading time, like, save, comments |
-| Saved | `/saved` | A reader's bookmarked articles |
-| Dashboard | `/admin` | Analytics cards and the fourteen-day engagement chart |
-| Editor | `/admin/addBlog` | Rich text editor, AI drafting, thumbnail, language |
+### 1. Home — [`1-home.png`](docs/screenshots/1-home.png)
 
-To capture your own, run the app (see [HowToSetup.md](HowToSetup.md)), seed the
-sample data, and save images into a `docs/screenshots/` folder.
+![Home](docs/screenshots/1-home.png)
+
+Hero and search, the featured article, the category filter with live counts,
+the article grid, and **Trending now** — which carries Bengali and English
+headlines side by side. The `বাং` button in the header switches the whole
+interface and the article list with it.
+
+### 2. Article — [`2-article.png`](docs/screenshots/2-article.png)
+
+![Article](docs/screenshots/2-article.png)
+
+The reading view: category, date, author, reading time, view and comment
+counts, the body, then like and save, the approved comments, and the comment
+box. Signed out it reads *"Sign in to comment — your name comes from your
+account"*, which is the rule the API enforces.
+
+### 3. Saved — [`3-saved.png`](docs/screenshots/3-saved.png)
+
+![Saved articles](docs/screenshots/3-saved.png)
+
+A reader's bookmarks, scoped to their own account. One Bengali article and one
+English one, each with author, reading time and like count.
+
+### 4. Dashboard — [`4-dashboard.png`](docs/screenshots/4-dashboard.png)
+
+![Analytics dashboard](docs/screenshots/4-dashboard.png)
+
+Published and draft counts, total and unique views, likes and comments
+awaiting review, the fourteen-day engagement chart, most viewed and most
+engaged rankings, the article table with publish and delete actions, and
+recent activity.
+
+Note the subtitle: **"Your articles only."** This is the demo account, an
+author, so every figure covers its own work and the sidebar has no Comments
+entry — moderation belongs to admins. An admin sees the whole site instead.
+
+### 5. Editor — [`5-editor.png`](docs/screenshots/5-editor.png)
+
+![Article editor](docs/screenshots/5-editor.png)
+
+Thumbnail upload to ImageKit, title and subtitle, the rich text editor,
+**Generate with AI** for a first draft from Gemini, and the category and
+**Language** selectors — the latter is what decides whether an article is
+shown to English readers, Bengali readers or both.
+
+To capture your own after changing the branding, run the app (see
+[HowToSetup.md](HowToSetup.md)), seed the sample data, and replace the files in
+`docs/screenshots/`.
 
 ## Stack
 
